@@ -150,7 +150,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 	#Likelihood function for estimating model parameters
 	dev<-function(p){
 		
-		Rate.mat[] <- c(p, 0.00001)[index.mat]
+		Rate.mat[] <- c(p, 0.000001)[index.mat]
 		
 		N<-length(x[,1])
 		V<-vcv.ou(phy, edges, Rate.mat, root.state=root.state)
@@ -180,7 +180,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 	#Informs the user that the optimization routine has started and starting value is being used (default=1)
 	cat("Begin subplex optimization routine -- Starting value:",ip, "\n")
 	
-	lower = rep(0.00001, np)
+	lower = rep(0.000001, np)
 	upper = rep(20, np)
 	
 	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5, "xtol_rel"=.Machine$double.eps^0.5)
@@ -191,12 +191,12 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 	#Takes estimated parameters from dev and calculates theta for each regime
 	dev.theta<-function(p){
 
-		Rate.mat[] <- c(p, 0.0001)[index.mat]
-
+		Rate.mat[] <- c(p, 0.000001)[index.mat]
+				
 		N<-length(x[,1])
 		V<-vcv.ou(phy, edges, Rate.mat, root.state=root.state)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, assume.station=bool)
-		
+
 		#Taken from the ouch source code -- GLS estimator for theta; necessary because of issues associated with solve() when using the standard GLS eq.
 		vh <- try(chol(V),silent=FALSE)
 		if (inherits(vh,'try-error'))
@@ -233,6 +233,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 	if (is.character(model)) {
 		if (model == "BM1"){
 			obj$AIC <- -2*obj$loglik+2*(np+1)
+			obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 			obj$Param.est <- matrix(out$solution[index.mat], dim(index.mat))
 			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
 			colnames(obj$Param.est) <- levels(int.states)
@@ -242,6 +243,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 		}
 		if (model == "BMS"){
 			obj$AIC <- -2*obj$loglik+2*(np+1)
+			obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 			obj$Param.est <- matrix(out$solution[index.mat], dim(index.mat))
 			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
 			colnames(obj$Param.est) <- levels(int.states)
@@ -251,6 +253,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 		}
 		if (model == "OU1"){
 			obj$AIC <- -2*obj$loglik+2*(np+1)
+			obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 			obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
 			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
 			colnames(obj$Param.est)<-levels(int.states)
@@ -261,6 +264,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 		if (root.station == FALSE){
 			if (model == "OUSM"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
 				obj$AIC <- -2*obj$loglik+2*(np+k)
+				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
 				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
 				colnames(obj$Param.est)<-levels(int.states)
@@ -272,6 +276,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 		if (root.station == TRUE){
 			if (model == "OUSM"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
 				obj$AIC <- -2*obj$loglik+2*(np+k)
+				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
 				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
 				colnames(obj$Param.est)<-levels(int.states)				
