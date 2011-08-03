@@ -311,5 +311,3 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 	obj
 }
 
-#To do: 
-#1. Should just replace AIC with AICc -- AICc converges on AIC as sample size increases, and is generall unbiased even with small sizes.
