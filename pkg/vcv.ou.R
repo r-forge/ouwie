@@ -1,28 +1,31 @@
-#OU variance-covariance matrix generator adapted from Butler and King (2004)
+#OU variance-covariance matrix generator
 
-#written by Jeremy M. Beaulieu and Jason Shapiro
+#written by Jeremy M. Beaulieu
 
-vcv.ou<-function(phy,edges,Rate.mat, root.state){
+vcv.ou<-function(phy, edges, Rate.mat, root.state){
 	
 	n=max(phy$edge[,1])
 	ntips=length(phy$tip.label)
 	k=max(as.numeric(phy$node.label))
-
+	edges[,4]<-1-edges[,4]
 	oldregime=root.state
-	oldtime=1
-	nodevar=rep(0,max(edges[,3]))
+	oldtime=0
+	nodevar1=rep(0,max(edges[,3]))
+	nodevar2=rep(0,max(edges[,3]))
 	alpha=Rate.mat[1,]
 	sigma=Rate.mat[2,]
-	n.cov=matrix(rep(0,n*n), n, n)
-	
-	nodecode=matrix(c(ntips+1,1,1),1,3)
-	
+	n.cov1=matrix(rep(0,n*n), n, n)
+	n.cov2=matrix(rep(0,n*n), n, n)
+	nodecode=matrix(c(ntips+1,0,root.state),1,3)
+
 	for(i in 1:length(edges[,1])){
+		
 		anc = edges[i, 2]
 		desc = edges[i, 3]
 		
 		newregime=which(edges[i,5:(k+4)]==1)
 		current=edges[i,4]
+		
 		if(anc%in%nodecode[,1]){
 			start=which(nodecode[,1]==anc)
 			oldtime=nodecode[start,2]
@@ -35,28 +38,49 @@ vcv.ou<-function(phy,edges,Rate.mat, root.state){
 		}
 		if(oldregime==newregime){
 			newtime=current
-			nodevar[i]=(sigma[oldregime]/(2*alpha[oldregime]))*(exp(-2*alpha[oldregime]*newtime)-exp(-2*alpha[oldregime]*oldtime))
+			nodevar1[i]=alpha[oldregime]*(newtime-oldtime)
+			nodevar2[i]=sigma[oldregime]*exp(2*alpha[oldregime]*(newtime+oldtime)/2)*(newtime-oldtime)
 		}
 		else{
-
-			newtime=current+((oldtime-current)/2)
-			epoch1=(sigma[oldregime]/(2*alpha[oldregime]))*(exp(-2*alpha[oldregime]*newtime)-exp(-2*alpha[oldregime]*oldtime))
+			newtime=current-((current-oldtime)/2)
+			epoch1a=(alpha[oldregime])*(newtime-oldtime)
+			epoch1b=sigma[oldregime]*exp(2*alpha[oldregime]*(newtime+oldtime)/2)*(newtime-oldtime)
 			oldtime=newtime
 			newtime=current
-			epoch2=(sigma[newregime]/(2*alpha[newregime]))*(exp(-2*alpha[newregime]*newtime)-exp(-2*alpha[newregime]*oldtime))
-			nodevar[i]<-epoch1+epoch2
+			epoch2a=alpha[newregime]*(newtime-oldtime)
+			epoch2b=sigma[newregime]*exp(2*alpha[newregime]*(newtime+oldtime)/2)*(newtime-oldtime)
+			nodevar1[i]<-epoch1a+epoch2a
+			nodevar2[i]<-epoch1b+epoch2b
 		}
-	
 		oldregime=newregime
-		n.cov[edges[i,2],edges[i,3]]=nodevar[i]
+		n.cov1[edges[i,2],edges[i,3]]=nodevar1[i]
+		n.cov2[edges[i,2],edges[i,3]]=nodevar2[i]
 	}
-
+		
 	#Remove nodecode matrix from memory
 	rm(nodecode)
+	
+	vcv1<-mat.gen(n.cov1,phy)
+	vcv2<-mat.gen(n.cov2,phy)
 
-	#Begins building summary matrix
+	vcv<-exp(-2*diag(vcv1))*vcv2
+
+	rm(vcv1)
+	rm(vcv2)
+	
+	vcv
+	
+}
+
+#Utility for building the vcv
+
+mat.gen<-function(mat,phy){
+	
+	n=max(phy$edge[,1])
+	ntips=length(phy$tip.label)
+	
 	A=matrix(rep(0,n*n), n, n)
-	A[tree$edge]=1
+	A[phy$edge]=1
 	mm<-c(1:n)
 	Nt<-t(t(A)*mm)
 	#Convert to a sparse matrix
@@ -73,21 +97,19 @@ vcv.ou<-function(phy,edges,Rate.mat, root.state){
 	S<-as.matrix.csr(S)
 	
 	#Create a matrix of sums for each node
-	temp<-n.cov%*%S+n.cov
+	temp<-mat%*%S+mat
 	n.covsums=apply(as.matrix(temp), 2, sum)
 	rm(temp)
-	rm(n.cov)
-
+	rm(mat)
 	#Generates a matrix that lists the descendants for each ancestral node
 	H.temp=Nt%*%S+Nt
 	rm(Nt)
 	rm(S)
 	H.mat=as.matrix(H.temp[(ntips+1):n,])
-	
 	rm(H.temp)
+	H.mat
 	
 	vcv<-matrix(0,ntips,ntips)
-	#Enters variances
 	diag(vcv)=n.covsums[1:ntips]
 	#Enters covariances
 	for(i in 1:length(H.mat[,1])){
@@ -101,7 +123,10 @@ vcv.ou<-function(phy,edges,Rate.mat, root.state){
 		vcv[tempL,tempR]=n.covsums[i+ntips]	
 		vcv[tempR,tempL]=n.covsums[i+ntips]	
 	}
-
+	
+	rm(H.mat)
+	gc()
+	
 	vcv
 	
 }
@@ -126,5 +151,3 @@ Ancestors<-function (x, node, type = c("all", "parent"))
     res
 }
 
-##NOTES:
-#A tree of 8500 species took 4.5 minutes to run to completion; required R64 and 10G of RAM -- JMB 12-29-10

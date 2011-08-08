@@ -113,7 +113,7 @@ OUwie.sim <- function(phy, data, alpha, sigma.sq, theta0, theta){
 	write.table(Tr.values, file="sim.data", quote=F, row.names=F,sep="\t")
 	Tr.values<-read.delim("sim.data")
 	
-	#Cannot seem to get the dataset to work unless I output to directory, re-upload it, then delete it. Weird.
+	#Cannot seem to get the dataset to work unless I output to directory, re-upload it, then delete it. Weird. X is read in as a character
 	string1<-"rm"
 	string2<- paste(string1, "sim.data", sep=" ")
 	system(string2)

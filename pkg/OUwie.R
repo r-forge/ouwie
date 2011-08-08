@@ -19,7 +19,7 @@ library(lattice)
 source("weight.mat.R")
 source("vcv.ou.R")
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSMVA"),ip=1, root.station=FALSE, plot.resid=TRUE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMVA"),ip=1, root.station=FALSE, plot.resid=TRUE){
 	
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -87,8 +87,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 	}
 	#Resort the edge matrix so that it looks like the original matrix order
 	edges=edges[sort.list(edges[,1]),]
-
 	x<-as.matrix(data[,2])
+	
 	#Matches the model with the appropriate parameter matrix structure
 	if (is.character(model)) {
 		index.mat<-matrix(0,2,k)
@@ -114,7 +114,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 			index.mat[2,1:k]<-2
 			bool=TRUE
 		}
-		if (model == "OUSM"){
+		if (model == "OUS"){
 			np=2
 			index<-matrix(TRUE,2,k)
 			index.mat[1,1:k]<-1
@@ -156,19 +156,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 		V<-vcv.ou(phy, edges, Rate.mat, root.state=root.state)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, assume.station=bool)
 		
-		#Taken from the ouch source code -- GLS estimator for theta; necessary because of issues associated with solve() when using the standard GLS eq.
-		vh <- try(chol(V),silent=TRUE)
-		if (inherits(vh,'try-error')) return(1000000)
+		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		
-		s<-svd(forwardsolve(vh,W,upper.tri=TRUE,transpose=TRUE))
-		inds<-s$d > sqrt(.Machine$double.eps)*max(s$d)
-		svals<-s$d[inds,drop=FALSE]
-		r<-length(svals)
-		svals<-diag(1/svals,nrow=r,ncol=r)
-		theta<-(s$v[,inds,drop=FALSE]%*%(svals%*%t(s$u[,inds,drop=FALSE])))%*%forwardsolve(vh,x,upper.tri=TRUE,transpose=TRUE)
-		#
-		#theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
-
 		DET<-determinant(V, logarithm=TRUE)
 
 		res<-W%*%theta-x		
@@ -197,22 +186,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 		V<-vcv.ou(phy, edges, Rate.mat, root.state=root.state)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, assume.station=bool)
 
-		#Taken from the ouch source code -- GLS estimator for theta; necessary because of issues associated with solve() when using the standard GLS eq.
-		vh <- try(chol(V),silent=FALSE)
-		if (inherits(vh,'try-error'))
-		stop(
-			 "error in Choleski decomposition of variance-covariance matrix",
-			 call.=FALSE
-			 )
+		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		
-		s <- svd(forwardsolve(vh,W,upper.tri=TRUE,transpose=TRUE))
-		inds <- s$d > sqrt(.Machine$double.eps)*max(s$d)
-		svals <- s$d[inds,drop=FALSE]
-		r <- length(svals)		
-		svals<-diag(1/svals,nrow=r,ncol=r)
-		theta<-(s$v[,inds,drop=FALSE]%*%(svals%*%t(s$u[,inds,drop=FALSE])))%*%forwardsolve(vh,x,upper.tri=TRUE,transpose=TRUE)
-		#
-		#theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		#Standard error of theta -- uses pseudoinverse to overcome singularity issues
 		se<-sqrt(diag(pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)))
 		
@@ -262,7 +237,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 			colnames(obj$theta0) <- c("Estimate", "SE")
 		}
 		if (root.station == FALSE){
-			if (model == "OUSM"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
+			if (model == "OUS"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
 				obj$AIC <- -2*obj$loglik+2*(np+k)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
@@ -274,7 +249,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 			}
 		}
 		if (root.station == TRUE){
-			if (model == "OUSM"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
+			if (model == "OUS"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
 				obj$AIC <- -2*obj$loglik+2*(np+k)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
@@ -310,4 +285,3 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUSM","OUSMV","OUSMA","OUSM
 		
 	obj
 }
-

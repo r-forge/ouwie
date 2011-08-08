@@ -21,7 +21,7 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 		for(j in 1:k){
 			
 			n.cov=matrix(0, n, n)
-			nodecode=matrix(c(ntips+1,0,1),1,3)
+			nodecode=matrix(c(ntips+1,0,root.state),1,3)
 			#Weight calculated for the root
 			#W[,1]<-exp(-alpha[1]*1)
 			#Weights for each species per regime
@@ -106,7 +106,7 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 		for(j in 1:k){
 			
 			n.cov=matrix(0, n, n)
-			nodecode=matrix(c(ntips+1,0,1),1,3)
+			nodecode=matrix(c(ntips+1,0,root.state),1,3)
 			#Weight calculated for the root
 			W[,1]<-exp(-alpha[1]*1)
 			#Weights for each species per regime
