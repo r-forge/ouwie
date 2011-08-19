@@ -6,7 +6,7 @@
 #regimes. The input is a tree of class "phylo" that has the regimes as internal node labels 
 #and a trait file. The trait file must be in the following order: Species names, Regime, and 
 #continuous trait. Different models can be specified -- Brownian motion (BM), multiple rate BM (BMS)
-#global OU (OU1), multiple regime OU (OUSM), multiple sigmas (OUSMV), multiple alphas (OUSMA), 
+#global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUSMV), multiple alphas (OUSMA), 
 #and the multiple alphas and sigmas (OUSMVA). 
 
 #required packages and additional source code files:
@@ -19,7 +19,7 @@ library(lattice)
 source("weight.mat.R")
 source("vcv.ou.R")
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMVA"),ip=1, root.station=FALSE, plot.resid=TRUE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),ip=1, root.station=FALSE, plot.resid=TRUE){
 	
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -112,9 +112,9 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 			index<-matrix(TRUE,2,k)
 			index.mat[1,1:k]<-1
 			index.mat[2,1:k]<-2
-			bool=TRUE
+			bool=root.station
 		}
-		if (model == "OUS"){
+		if (model == "OUM"){
 			np=2
 			index<-matrix(TRUE,2,k)
 			index.mat[1,1:k]<-1
@@ -122,7 +122,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 			bool=root.station
 		}
 		
-		if (model == "OUSMV") {
+		if (model == "OUMV") {
 			np=k+1
 			index<-matrix(TRUE,2,k)
 			index.mat[1,1:k]<-1
@@ -130,7 +130,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 			bool=root.station
 		}
 		
-		if (model == "OUSMA") {
+		if (model == "OUMA") {
 			np=k+1
 			index<-matrix(TRUE,2,k)
 			index.mat[1,1:k]<-1:k
@@ -138,7 +138,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 			bool=root.station
 		}
 		
-		if (model == "OUSMVA") {
+		if (model == "OUMVA") {
 			np=k*2
 			index<-matrix(TRUE,2,k)
 			index.mat[index]<-1:(k*2)
@@ -213,8 +213,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
 			colnames(obj$Param.est) <- levels(int.states)
 			theta <- dev.theta(out$solution)
-			obj$theta0 <- matrix(theta[1,], 1,2)
-			colnames(obj$theta0) <- c("Estimate", "SE")
+			obj$Root <- matrix(theta[1,], 1,2)
+			colnames(obj$Root) <- c("Estimate", "SE")
 		}
 		if (model == "BMS"){
 			obj$AIC <- -2*obj$loglik+2*(np+1)
@@ -223,21 +223,35 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
 			colnames(obj$Param.est) <- levels(int.states)
 			theta <- dev.theta(out$solution)
-			obj$theta0 <- matrix(theta[1,], 1,2)
-			colnames(obj$theta0) <- c("Estimate", "SE")
+			obj$Root <- matrix(theta[1,], 1,2)
+			colnames(obj$Root) <- c("Estimate", "SE")
 		}
-		if (model == "OU1"){
-			obj$AIC <- -2*obj$loglik+2*(np+1)
-			obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
-			obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
-			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
-			colnames(obj$Param.est)<-levels(int.states)
-			theta <- dev.theta(out$solution)
-			obj$theta0 <- matrix(theta[1,], 1,2)
-			colnames(obj$theta0) <- c("Estimate", "SE")
+		if (root.station == TRUE){
+			if (model == "OU1"){
+				obj$AIC <- -2*obj$loglik+2*(np+1)
+				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
+				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
+				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+				colnames(obj$Param.est)<-levels(int.states)
+				theta <- dev.theta(out$solution)
+				obj$theta0 <- matrix(theta[1,], 1,2)
+				colnames(obj$theta0) <- c("Estimate", "SE")			}
 		}
 		if (root.station == FALSE){
-			if (model == "OUS"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
+			if (model == "OU1"){
+				obj$AIC <- -2*obj$loglik+2*(np+1)
+				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
+				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
+				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+				colnames(obj$Param.est)<-levels(int.states)
+				theta<-dev.theta(out$solution)
+				obj$theta<-theta[1:2,1:2]
+				rownames(obj$theta)<-c("Root", "Primary")
+				colnames(obj$theta)<-c("Estimate", "SE")
+			}
+		}
+		if (root.station == FALSE){
+			if (model == "OUM"| model == "OUMV"| model == "OUMA" | model == "OUMVA"){ 
 				obj$AIC <- -2*obj$loglik+2*(np+k)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
@@ -249,7 +263,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 			}
 		}
 		if (root.station == TRUE){
-			if (model == "OUS"| model == "OUSMV"| model == "OUSMA" | model == "OUSMVA"){ 
+			if (model == "OUM"| model == "OUMV"| model == "OUMA" | model == "OUMVA"){ 
 				obj$AIC <- -2*obj$loglik+2*(np+k)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
@@ -275,7 +289,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUS","OUSMV","OUSMA","OUSMV
 	hess.eig<-eigen(h,symmetric=TRUE)
 	obj$eigval<-signif(hess.eig$values,2)
 	eigvect<-round(hess.eig$vectors, 2)
-	#Eventually it would be great to automate this next step -- writes eigenvectors to directory to find problem parameters
+	#Writes eigenvectors to directory to find problem parameters -- eventually it would be great to automate this next step
 	write.table(eigvect, file="Eigenvectors", quote=F, row.names=F, col.names=F, sep="\t") 
 	#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution -- remove problem variable and rerun
 	if(any(obj$eigval<0)){

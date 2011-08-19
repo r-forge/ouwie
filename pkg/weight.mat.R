@@ -46,19 +46,18 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 					newtime=current
 					
 					if(newregime==j){
-						nodevar[i]=exp(-alpha[root.state])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
-					}
+						nodevar[i]=exp(-alpha[oldregime])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
+									   }
 					else{
 						nodevar[i]=0
 					}
 				}
 				else{
 					newtime=current-((current-oldtime)/2)
-					epoch1=exp(-alpha[root.state])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
+					epoch1=exp(-alpha[oldregime])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
 					oldtime=newtime
 					newtime=current
-					epoch2=exp(-alpha[root.state])*(exp(alpha[newregime]*newtime)-exp(alpha[newregime]*oldtime))
-					
+					epoch2=exp(-alpha[newregime])*(exp(alpha[newregime]*newtime)-exp(alpha[newregime]*oldtime))
 					if(oldregime==j){
 						nodevar[i]=epoch1
 					}
@@ -108,7 +107,7 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 			n.cov=matrix(0, n, n)
 			nodecode=matrix(c(ntips+1,0,root.state),1,3)
 			#Weight calculated for the root
-			W[,1]<-exp(-alpha[1]*1)
+			W[,1]<-exp(-alpha[1])
 			#Weights for each species per regime
 			for(i in 1:length(edges[,1])){
 				anc = edges[i, 2]
@@ -129,7 +128,6 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 				
 				if(oldregime==newregime){
 					newtime=current
-					
 					if(newregime==j){
 						nodevar[i]=exp(-alpha[root.state])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
 					}
@@ -143,7 +141,6 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 					oldtime=newtime
 					newtime=current
 					epoch2=exp(-alpha[root.state])*(exp(alpha[newregime]*newtime)-exp(alpha[newregime]*oldtime))
-					
 					if(oldregime==j){
 						nodevar[i]=epoch1
 					}

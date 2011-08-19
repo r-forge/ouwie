@@ -3,7 +3,7 @@
 #written by Jeremy M. Beaulieu
 
 vcv.ou<-function(phy, edges, Rate.mat, root.state){
-	
+
 	n=max(phy$edge[,1])
 	ntips=length(phy$tip.label)
 	k=max(as.numeric(phy$node.label))
@@ -59,20 +59,17 @@ vcv.ou<-function(phy, edges, Rate.mat, root.state){
 		
 	#Remove nodecode matrix from memory
 	rm(nodecode)
-	
 	vcv1<-mat.gen(n.cov1,phy)
 	vcv2<-mat.gen(n.cov2,phy)
-
 	vcv<-exp(-2*diag(vcv1))*vcv2
-
 	rm(vcv1)
 	rm(vcv2)
-	
+
 	vcv
 	
 }
 
-#Utility for building the vcv
+#Utility for building a summary matrix -- slow for now, need to work on speeding up
 
 mat.gen<-function(mat,phy){
 	
@@ -109,8 +106,8 @@ mat.gen<-function(mat,phy){
 	rm(H.temp)
 	H.mat
 	
-	vcv<-matrix(0,ntips,ntips)
-	diag(vcv)=n.covsums[1:ntips]
+	new.mat<-matrix(0,ntips,ntips)
+	diag(new.mat)=n.covsums[1:ntips]
 	#Enters covariances
 	for(i in 1:length(H.mat[,1])){
 		temp=unique(H.mat[i,])
@@ -120,14 +117,13 @@ mat.gen<-function(mat,phy){
 		tempL=which(H.mat[i,]==temp[2])
 		tempL=subset(tempL,tempL%in%c(1:ntips))
 		
-		vcv[tempL,tempR]=n.covsums[i+ntips]	
-		vcv[tempR,tempL]=n.covsums[i+ntips]	
+		new.mat[tempL,tempR]=n.covsums[i+ntips]	
+		new.mat[tempR,tempL]=n.covsums[i+ntips]	
 	}
 	
 	rm(H.mat)
-	gc()
 	
-	vcv
+	new.mat
 	
 }
 
