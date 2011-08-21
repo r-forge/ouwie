@@ -19,7 +19,7 @@ library(lattice)
 source("weight.mat.R")
 source("vcv.ou.R")
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),ip=1, root.station=FALSE, plot.resid=TRUE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),ip=1, root.station=TRUE, plot.resid=TRUE){
 	
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -210,39 +210,39 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			obj$AIC <- -2*obj$loglik+2*(np+1)
 			obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 			obj$Param.est <- matrix(out$solution[index.mat], dim(index.mat))
-			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+			rownames(obj$Param.est)<-c("alpha","sigma.sq")
 			colnames(obj$Param.est) <- levels(int.states)
 			theta <- dev.theta(out$solution)
-			obj$Root <- matrix(theta[1,], 1,2)
-			colnames(obj$Root) <- c("Estimate", "SE")
+			obj$ahat <- matrix(theta[1,], 1,2)
+			colnames(obj$ahat) <- c("Estimate", "SE")
 		}
 		if (model == "BMS"){
 			obj$AIC <- -2*obj$loglik+2*(np+1)
 			obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 			obj$Param.est <- matrix(out$solution[index.mat], dim(index.mat))
-			rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+			rownames(obj$Param.est)<-c("alpha","sigma.sq")
 			colnames(obj$Param.est) <- levels(int.states)
 			theta <- dev.theta(out$solution)
-			obj$Root <- matrix(theta[1,], 1,2)
-			colnames(obj$Root) <- c("Estimate", "SE")
+			obj$ahat <- matrix(theta[1,], 1,2)
+			colnames(obj$ahat) <- c("Estimate", "SE")
 		}
 		if (root.station == TRUE){
 			if (model == "OU1"){
 				obj$AIC <- -2*obj$loglik+2*(np+1)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
-				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+				rownames(obj$Param.est)<-c("alpha","sigma.sq")
 				colnames(obj$Param.est)<-levels(int.states)
 				theta <- dev.theta(out$solution)
-				obj$theta0 <- matrix(theta[1,], 1,2)
-				colnames(obj$theta0) <- c("Estimate", "SE")			}
+				obj$theta <- matrix(theta[1,], 1,2)
+				colnames(obj$theta) <- c("Estimate", "SE")			}
 		}
 		if (root.station == FALSE){
 			if (model == "OU1"){
 				obj$AIC <- -2*obj$loglik+2*(np+1)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
-				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+				rownames(obj$Param.est)<-c("alpha","sigma.sq")
 				colnames(obj$Param.est)<-levels(int.states)
 				theta<-dev.theta(out$solution)
 				obj$theta<-theta[1:2,1:2]
@@ -255,7 +255,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				obj$AIC <- -2*obj$loglik+2*(np+k)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
-				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+				rownames(obj$Param.est)<-c("alpha","sigma.sq")
 				colnames(obj$Param.est)<-levels(int.states)
 				obj$theta<-dev.theta(out$solution)
 				rownames(obj$theta)<-c("Root",levels(int.states))
@@ -267,7 +267,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				obj$AIC <- -2*obj$loglik+2*(np+k)
 				obj$AICc <- -2*obj$loglik+(2*(np+k)*(ntips/(ntips-(np+k)-1)))
 				obj$Param.est<- matrix(out$solution[index.mat], dim(index.mat))
-				rownames(obj$Param.est)<-c("Alpha","Sigma.sq")
+				rownames(obj$Param.est)<-c("alpha","sigma.sq")
 				colnames(obj$Param.est)<-levels(int.states)				
 				obj$theta<-dev.theta(out$solution)
 				rownames(obj$theta)<-c(levels(int.states))
@@ -288,6 +288,9 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	#Eigendecomposition of the Hessian to assess reliability of likelihood estimates
 	hess.eig<-eigen(h,symmetric=TRUE)
 	obj$eigval<-signif(hess.eig$values,2)
+	obj$index.matrix <- index.mat
+	rownames(obj$index.matrix)<-c("alpha","sigma.sq")
+	colnames(obj$index.matrix)<-levels(int.states)
 	eigvect<-round(hess.eig$vectors, 2)
 	#Writes eigenvectors to directory to find problem parameters -- eventually it would be great to automate this next step
 	write.table(eigvect, file="Eigenvectors", quote=F, row.names=F, col.names=F, sep="\t") 
