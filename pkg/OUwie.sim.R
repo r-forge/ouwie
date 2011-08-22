@@ -110,7 +110,7 @@ OUwie.sim <- function(phy, data, alpha, sigma.sq, theta0, theta){
 	Tr.values<-cbind(phy$tip.label, data[,1], x[TIPS,])
 	Tr.values<-as.data.frame(Tr.values)
 	colnames(Tr.values)<-c("Genus_species","Reg","X")
-	write.table(Tr.values, file="sim.data", quote=F, row.names=F,sep="\t")
+	write.table(Tr.values, file="sim.data", quote=FALSE, row.names=FALSE, sep="\t")
 	Tr.values<-read.delim("sim.data")
 	
 	#Cannot seem to get the dataset to work unless I output to directory, re-upload it, then delete it. Weird. X is read in as a character

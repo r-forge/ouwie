@@ -16,10 +16,8 @@ library(numDeriv)
 library(SparseM)
 library(corpcor)
 library(lattice)
-source("weight.mat.R")
-source("vcv.ou.R")
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),ip=1, root.station=TRUE, plot.resid=TRUE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, ip=1, plot.resid=TRUE){
 	
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -293,7 +291,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	colnames(obj$index.matrix)<-levels(int.states)
 	eigvect<-round(hess.eig$vectors, 2)
 	#Writes eigenvectors to directory to find problem parameters -- eventually it would be great to automate this next step
-	write.table(eigvect, file="Eigenvectors", quote=F, row.names=F, col.names=F, sep="\t") 
+	write.table(eigvect, file="Eigenvectors", quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t") 
 	#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution -- remove problem variable and rerun
 	if(any(obj$eigval<0)){
 		obj$Diagnostic<-'The objective function may be at a saddle point -- check eigenvectors file or try simpler model'
