@@ -6,8 +6,8 @@
 #regimes. The input is a tree of class "phylo" that has the regimes as internal node labels 
 #and a trait file. The trait file must be in the following order: Species names, Regime, and 
 #continuous trait. Different models can be specified -- Brownian motion (BM), multiple rate BM (BMS)
-#global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUSMV), multiple alphas (OUSMA), 
-#and the multiple alphas and sigmas (OUSMVA). 
+#global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA), 
+#and the multiple alphas and sigmas (OUMVA). 
 
 #required packages and additional source code files:
 library(ape)
@@ -17,7 +17,7 @@ library(SparseM)
 library(corpcor)
 library(lattice)
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, ip=1, plot.resid=TRUE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, ip=1, plot.resid=TRUE, eigenvect=TRUE){
 	
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -286,12 +286,12 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	#Eigendecomposition of the Hessian to assess reliability of likelihood estimates
 	hess.eig<-eigen(h,symmetric=TRUE)
 	obj$eigval<-signif(hess.eig$values,2)
-	obj$index.matrix <- index.mat
-	rownames(obj$index.matrix)<-c("alpha","sigma.sq")
-	colnames(obj$index.matrix)<-levels(int.states)
-	eigvect<-round(hess.eig$vectors, 2)
-	#Writes eigenvectors to directory to find problem parameters -- eventually it would be great to automate this next step
-	write.table(eigvect, file="Eigenvectors", quote=FALSE, row.names=FALSE, col.names=FALSE, sep="\t") 
+		if(eigenvect==TRUE){
+		obj$eigvect<-round(hess.eig$vectors, 2)
+		obj$index.matrix <- index.mat
+		rownames(obj$index.matrix)<-c("alpha","sigma.sq")
+		colnames(obj$index.matrix)<-levels(int.states)
+	} 
 	#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution -- remove problem variable and rerun
 	if(any(obj$eigval<0)){
 		obj$Diagnostic<-'The objective function may be at a saddle point -- check eigenvectors file or try simpler model'
