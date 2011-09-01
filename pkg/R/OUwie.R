@@ -293,7 +293,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		rownames(obj$index.matrix)<-c("alpha","sigma.sq")
 		colnames(obj$index.matrix)<-levels(int.states)
 	} 
-	#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution -- remove problem variable and rerun
+	#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution
 	if(any(obj$eigval<0)){
 		obj$Diagnostic<-'The objective function may be at a saddle point -- check eigenvectors or try a simpler model'
 	}
