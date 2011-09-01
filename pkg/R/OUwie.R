@@ -53,7 +53,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			regime <- matrix(0,nrow=length(edges[,1]),ncol=2)
 			regime[,1]<-1
 			regime[,2]<-0
-
+			
 			edges=cbind(edges,regime)
 		}
 		else{
@@ -78,9 +78,9 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			for (i in 1:length(mm)) {
 				regime[i,mm[i]] <- 1 
 			}
-			#Finishes the edges matrix
+	#Finishes the edges matrix
 			edges=cbind(edges,regime)
-
+			
 		}
 	}
 	#Resort the edge matrix so that it looks like the original matrix order
@@ -157,11 +157,11 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		
 		DET<-determinant(V, logarithm=TRUE)
-
+		
 		res<-W%*%theta-x		
 		q<-t(res)%*%solve(V,res)
 		logl <- -.5*(N*log(2*pi)+as.numeric(DET$modulus)+q[1,1])
-
+		
 		return(-logl)
 	}
 	#Informs the user that the optimization routine has started and starting value is being used (default=1)
@@ -174,16 +174,16 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev, lb=lower, ub=upper, opts=opts)
 	
 	obj$loglik <- -out$objective
-
+	
 	#Takes estimated parameters from dev and calculates theta for each regime
 	dev.theta<-function(p){
-
+		
 		Rate.mat[] <- c(p, 0.000001)[index.mat]
-				
+		
 		N<-length(x[,1])
 		V<-vcv.ou(phy, edges, Rate.mat, root.state=root.state)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, assume.station=bool)
-
+		
 		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		
 		#Standard error of theta -- uses pseudoinverse to overcome singularity issues
@@ -200,7 +200,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		#Returns final GLS solution
 		theta.est
 	}
-
+	
 	#Informs the user that the summarization has begun, output model-dependent and dependent on whether the root theta is to be estimated
 	cat("Finished. Summarizing results.", "\n")	
 	if (is.character(model)) {
@@ -281,12 +281,13 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	h <- hessian(x=out$solution, func=dev)
 	#Using the corpcor package here to overcome possible NAs with calculating the SE
 	obj$Param.SE<-matrix(sqrt(diag(pseudoinverse(h)))[index.mat], dim(index.mat))
-	rownames(obj$Param.SE)<-c("Alpha","Sigma.sq")
+	rownames(obj$Param.SE)<-c("alpha","sigma.sq")
 	colnames(obj$Param.SE)<-levels(int.states)
 	#Eigendecomposition of the Hessian to assess reliability of likelihood estimates
 	hess.eig<-eigen(h,symmetric=TRUE)
+	#If eigenvect is TRUE then the eigenvector and index matrix will appear in the list of objects 
 	obj$eigval<-signif(hess.eig$values,2)
-		if(eigenvect==TRUE){
+	if(eigenvect==TRUE){
 		obj$eigvect<-round(hess.eig$vectors, 2)
 		obj$index.matrix <- index.mat
 		rownames(obj$index.matrix)<-c("alpha","sigma.sq")
@@ -294,9 +295,9 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	} 
 	#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution -- remove problem variable and rerun
 	if(any(obj$eigval<0)){
-		obj$Diagnostic<-'The objective function may be at a saddle point -- check eigenvectors file or try simpler model'
+		obj$Diagnostic<-'The objective function may be at a saddle point -- check eigenvectors or try a simpler model'
 	}
 	else{obj$Diagnostic<-'Arrived at a reliable solution'}
-		
+	
 	obj
 }
