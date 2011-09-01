@@ -36,7 +36,7 @@ For models that allow \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} to vary (i
 \item{Iterations}{number of iterations of the likelihood search that were executed}
 \item{eigval}{the eigenvalues from the decomposition of the Hessian of the likelihood function. If any \code{eigval<0} then one or more parameters were not optimized during the likelihood search (see Details)}
 \item{eigvect}{If \code{eigenvect=TRUE} provides the eigenvectors from the decomposition of the Hessian of the likelihood function (see Details)}
-\item{index.matrix}{If \code{eigenvect=TRUE} provides the indices of the parameters being estimated. The numbers correspond to the row in the \code{eigval} and can useful for identifying the parameters that are causing the objective function to be at a saddlepoint (see Details)}
+\item{index.matrix}{If \code{eigenvect=TRUE} provides the indices of the parameters being estimated. The numbers correspond to the row in the \code{eigvect} and can useful for identifying the parameters that are causing the objective function to be at a saddlepoint (see Details)}
 \item{Diagnostic}{more informative message with the status of the optimization (see Details).}
 }
 \examples{
