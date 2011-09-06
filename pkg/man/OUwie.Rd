@@ -57,7 +57,7 @@ trait[1:5,]
 OUwie(tree,trait,model=c("OUMV"),root.station=FALSE, plot.resid=TRUE)
 }
 \references{
-Beaulieu J.M., Jhwueng D.C., and O'Meara B.C. In prep. Modeling stabilizing selection: Relaxing the Ornstein-Uhlenbeck model of adaptive evolution. Evolution. in prep.
+Beaulieu J.M., Jhwueng D.C., and O'Meara B.C. Submitted. Modeling stabilizing selection: Relaxing the Ornstein-Uhlenbeck model of adaptive evolution. Evolution. Submitted.
 
 O'Meara B.C., Ane C., Sanderson P.C., Wainwright P.C. 2006. Testing for different rates of continuous trait evolution using likelihood. Evolution 60:922-933.
 
