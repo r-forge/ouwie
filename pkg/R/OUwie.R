@@ -9,14 +9,6 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA), 
 #and the multiple alphas and sigmas (OUMVA). 
 
-#required packages and additional source code files:
-library(ape)
-library(nloptr)
-library(numDeriv)
-library(SparseM)
-library(corpcor)
-library(lattice)
-
 OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, ip=1, plot.resid=TRUE, eigenvect=TRUE){
 	
 	#Makes sure the data is in the same order as the tip labels

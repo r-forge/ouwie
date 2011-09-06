@@ -65,7 +65,6 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 						nodevar[i]=epoch2
 					}
 				}
-				
 				oldregime=newregime
 				n.cov[edges[i,2],edges[i,3]]=nodevar[i]
 			}
