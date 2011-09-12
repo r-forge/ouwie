@@ -70,7 +70,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			for (i in 1:length(mm)) {
 				regime[i,mm[i]] <- 1 
 			}
-	#Finishes the edges matrix
+			#Finishes the edges matrix
 			edges=cbind(edges,regime)
 			
 		}
@@ -143,7 +143,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		Rate.mat[] <- c(p, 0.000001)[index.mat]
 		
 		N<-length(x[,1])
-		V<-vcv.ou(phy, edges, Rate.mat, root.state=root.state)
+		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, assume.station=bool)
 		
 		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
@@ -173,7 +173,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		Rate.mat[] <- c(p, 0.000001)[index.mat]
 		
 		N<-length(x[,1])
-		V<-vcv.ou(phy, edges, Rate.mat, root.state=root.state)
+		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, assume.station=bool)
 		
 		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
