@@ -14,7 +14,7 @@ OUwie.sim(phy,data,alpha,sigma.sq,theta0,theta)
 \item{theta}{a numeric vector giving the values of \eqn{\theta}{theta} for each selective regime (see Details)}
 }
 \details{
-The input is a tree and a data file. The tree must be of class \dQuote{phylo} and must contain the ancestral selective regimes as internal node labels. The data file is a dataframe that must have column entries in the following order: [,1] species names and [,2] their current selective regime. The user specifies the simulated parameter values (i.e. \eqn{\alpha}{alpha}, \eqn{\sigma^2}{sigma^2}, \eqn{\theta_0}{theta_0}, \eqn{\theta}{theta}). Assuming two selective regimes, the way possible models can be specified are as follows:
+The input is a tree and a data file. The tree must be of class \dQuote{phylo} and must contain the ancestral selective regimes as internal node labels. The data file is a dataframe that must have column entries in the following order: [,1] species names and [,2] their current selective regime. The user specifies the simulated parameter values (i.e. \eqn{\alpha}{alpha}, \eqn{\sigma^2}{sigma^2}, \eqn{\theta_0}{theta_0}, \eqn{\theta}{theta}). Assuming two selective regimes, possible models can be specified as follows:
 
 a. Single rate Brownian motion (\code{BM1}): alpha=c(0,0); sigma.sq=c(0.45,0.45); theta0=0; theta=c(0,0).
 
