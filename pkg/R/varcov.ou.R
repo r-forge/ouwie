@@ -3,7 +3,7 @@
 #written by Jeremy M. Beaulieu
 
 varcov.ou<-function(phy, edges, Rate.mat, root.state){
-
+	
 	n=max(phy$edge[,1])
 	ntips=length(phy$tip.label)
 	k=max(as.numeric(phy$node.label))
@@ -17,7 +17,7 @@ varcov.ou<-function(phy, edges, Rate.mat, root.state){
 	n.cov1=matrix(rep(0,n*n), n, n)
 	n.cov2=matrix(rep(0,n*n), n, n)
 	nodecode=matrix(c(ntips+1,0,root.state),1,3)
-
+	
 	for(i in 1:length(edges[,1])){
 		
 		anc = edges[i, 2]
@@ -56,15 +56,15 @@ varcov.ou<-function(phy, edges, Rate.mat, root.state){
 		n.cov1[edges[i,2],edges[i,3]]=nodevar1[i]
 		n.cov2[edges[i,2],edges[i,3]]=nodevar2[i]
 	}
-		
-	#Remove nodecode matrix from memory
+	
+#Remove nodecode matrix from memory
 	rm(nodecode)
 	vcv1<-mat.gen(n.cov1,phy)
 	vcv2<-mat.gen(n.cov2,phy)
 	vcv<-exp(-2*diag(vcv1))*vcv2
 	rm(vcv1)
 	rm(vcv2)
-
+	
 	vcv
 	
 }
@@ -80,25 +80,25 @@ mat.gen<-function(mat,phy){
 	A[phy$edge]=1
 	mm<-c(1:n)
 	Nt<-t(t(A)*mm)
-	#Convert to a sparse matrix
+#Convert to a sparse matrix
 	Nt<-as.matrix.csr(Nt)
 	rm(A)
 	
-	#Generates the mystical S matrix
+#Generates the mystical S matrix
 	S<-matrix(0,n,n)
 	for(i in 1:n){
 		nn<-Ancestors(phy,i)
 		S[nn,i]<-1
 	}
-	#Convert to a sparse matrix
+#Convert to a sparse matrix
 	S<-as.matrix.csr(S)
 	
-	#Create a matrix of sums for each node
+#Create a matrix of sums for each node
 	temp<-mat%*%S+mat
 	n.covsums=apply(as.matrix(temp), 2, sum)
 	rm(temp)
 	rm(mat)
-	#Generates a matrix that lists the descendants for each ancestral node
+#Generates a matrix that lists the descendants for each ancestral node
 	H.temp=Nt%*%S+Nt
 	rm(Nt)
 	rm(S)
@@ -108,7 +108,7 @@ mat.gen<-function(mat,phy){
 	
 	new.mat<-matrix(0,ntips,ntips)
 	diag(new.mat)=n.covsums[1:ntips]
-	#Enters covariances
+#Enters covariances
 	for(i in 1:length(H.mat[,1])){
 		temp=unique(H.mat[i,])
 		temp=temp[temp!=0]
@@ -146,4 +146,43 @@ Ancestors<-function (x, node, type = c("all", "parent"))
     }
     res
 }
+
+allChildren = function(x){
+	parent = x$edge[,1]
+	children = x$edge[,2]
+	res = vector("list", max(x$edge))
+	for(i in 1:length(parent)) res[[parent[i]]] = c(res[[parent[i]]], children[i])
+	res
+}
+
+
+Children = function(x, node){
+	if(length(node)==1) return(allChildren(x)[[node]])
+	allChildren(x)[node]
+}
+
+
+Descendants = function(x, node, type=c("tips","children","all")){
+    type <- match.arg(type)
+    if(type=="children") return(Children(x, node))
+    
+    desc = function(x, node, type){# ,isInternal=NULL, ch=NULL
+        isInternal = logical(max(x$edge))
+        isInternal[ unique(x$edge[,1]) ] =TRUE 
+		
+        if(!isInternal[node])return(node)
+        ch = allChildren(x)
+        res = NULL
+        while(length(node)>0){
+            tmp = unlist(ch[node])
+            res = c(res, tmp)
+            node = tmp[isInternal[tmp]]
+        }
+		if(type=="tips") return(res[!isInternal[res]])
+		res
+    }
+    if(length(node)>1) return(lapply(node, desc, x=x, type=type))
+    desc(x,node, type)
+}
+
 

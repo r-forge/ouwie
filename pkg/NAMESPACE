@@ -1,2 +1,2 @@
-export(OUwie,OUwie.sim)
+export(OUwie,OUwie.sim,OUwie.fixed)
 import(ape,nloptr,numDeriv,lattice,SparseM)
