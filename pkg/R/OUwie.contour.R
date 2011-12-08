@@ -4,7 +4,7 @@
 
 library(akima)
 
-OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3,  levels=c(0.5,1,1.5,2),...){
+OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3,  levels=c(0.5,1,1.5,2),likelihood.boundary=100,...){
   #focal.param is something like c("alpha_2","sigma.sq_1"). They are then split on "_"
   if(length(focal.param)!=2) {
      stop("need a focal.param vector of length two")
@@ -99,7 +99,22 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
     xlim=range(c(param1.points,param2.points))
     ylim=range(c(param1.points,param2.points))
   }
-  contour(interp(x= param1.points,y=param2.points,z=likelihoods-min(likelihoods),xo=seq(min(param1.points), max(param1.points), length = 400),yo=seq(min(param1.points), max(param1.points), length = 400),duplicate="strip"), xlim=xlim,ylim=ylim,xlab=focal.param[1],ylab=focal.param[2],levels=levels, ...)
+  likelihoods.rescaled<-likelihoods-min(likelihoods)
+  while(length(likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)])<5) { #just to deal with extreme cases with few points
+     likelihood.boundary<-2*likelihood.boundary
+  }
+  #interpolated.points<-interp(x= param1.points[which(likelihoods.rescaled<likelihood.boundary)],y=param2.points[which(likelihoods.rescaled<likelihood.boundary)],z=likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)],xo=seq(min(param1.points), max(param1.points), length = 400),yo=seq(min(param1.points), max(param1.points), length = 400),duplicate="median",linear=FALSE,extrap=TRUE)
+  interpolated.points<-interp(x= param1.points[which(likelihoods.rescaled<likelihood.boundary)],y=param2.points[which(likelihoods.rescaled<likelihood.boundary)],z=likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)],linear=FALSE,extrap=TRUE)
+
+  
+  #SOMETHING IS DEEPLY WRONG HERE, B/C LIKELIHOODS HERE ARE NOT THE SAME AS WHAT IS OUTPUT
+  
+  print("likelihoodsrescaled.in.domain")
+  print(likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)])
+  print(interpolated.points)
+ # contour(interpolated.points, xlim=xlim,ylim=ylim,xlab=focal.param[1],ylab=focal.param[2],levels=levels, ...)
+  levels<-NULL
+  contour(interpolated.points, xlab=focal.param[1],ylab=focal.param[2], ...)
   if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
     plot.range<-range(c(param1.points,param2.points))
     lines(x= plot.range,y= plot.range,lty="dotted")
