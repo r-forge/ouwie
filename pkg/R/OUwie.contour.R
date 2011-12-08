@@ -2,10 +2,9 @@
 
 #written by Brian C. O'Meara
 
-library(parallel)
 library(akima)
 
-OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=5000, sd.mult=3, parallel=TRUE,mc.cores=detectCores(), levels=c(0.5,1,1.5,2),...){
+OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3,  levels=c(0.5,1,1.5,2),...){
   #focal.param is something like c("alpha_2","sigma.sq_1"). They are then split on "_"
   if(length(focal.param)!=2) {
      stop("need a focal.param vector of length two")
@@ -85,18 +84,20 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
   params.points<-data.frame(param1.points,param2.points)
   names(params.points)<-focal.param
   params.points.list<-split(params.points,row(params.points),drop=TRUE)
-  if(!parallel) {
-    mc.cores<-1
-  }
-  #likelihoods<-(-1*simplify2array(lapply(params.points.list,optimizeSemifixed,phy=phy,data=data, model=model,root.station=root.station, clade=clade, globalMLE=globalMLE)))
-  likelihoods<-(-1*simplify2array(lapply(params.points.list,optimizeSemifixed,phy=phy,data=data, model=model,root.station=root.station, clade=clade, globalMLE=globalMLE, mc.cores=mc.cores)))
+  likelihoods<-(-1*simplify2array(lapply(params.points.list,optimizeSemifixed,phy=phy,data=data, model=model,root.station=root.station, clade=clade, globalMLE=globalMLE)))
 
   #include the MLE in the set
   likelihoods<-c(likelihoods,globalMLE$loglik)
   param1.points<-c(param1.points,as.numeric(focal.param.df[3,1]))
   param2.points<-c(param2.points,as.numeric(focal.param.df[3,2]))
   
-  contour(interp(x= param1.points,y=param2.points,z=likelihoods-min(likelihoods),xo=seq(min(param1.points), max(param1.points), length = 400),yo=seq(min(param1.points), max(param1.points), length = 400),duplicate="strip"),levels=levels, ...)
+  xlim=range(param1.points)
+  ylim=range(param2.points)
+  if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
+    xlim=range(c(param1.points,param2.points))
+    ylim=range(c(param1.points,param2.points))
+  }
+  contour(interp(x= param1.points,y=param2.points,z=likelihoods-min(likelihoods),xo=seq(min(param1.points), max(param1.points), length = 400),yo=seq(min(param1.points), max(param1.points), length = 400),duplicate="strip"), xlim=xlim,ylim=ylim,xlab=focal.param[1],ylab=focal.param[2],levels=levels, ...)
   if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
     plot.range<-range(c(param1.points,param2.points))
     lines(x= plot.range,y= plot.range,lty="dotted")
