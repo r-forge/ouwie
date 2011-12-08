@@ -32,8 +32,10 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
   }
   
   #now get our random points, sampling most densely near the MLE
-  param1.points<-replicate(n=round(nrep/2),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,1]),sd=sd.mult*as.numeric(focal.param.df[4,1])))
-  param2.points<-replicate(n=round(nrep/2),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,2]),sd=sd.mult*as.numeric(focal.param.df[4,2])))
+  param1.points<-replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,1]),sd=as.numeric(focal.param.df[4,1])))
+  param2.points<-replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,2]),sd=as.numeric(focal.param.df[4,2])))
+  param1.points<-c(param1.points,replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,1]),sd=sd.mult*as.numeric(focal.param.df[4,1]))))
+  param2.points<-c(param2.points,replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,2]),sd=sd.mult*as.numeric(focal.param.df[4,2]))))
   param1.points<-c(param1.points,runif(nrep-round(nrep/2),min=min(param1.points),max=max(param1.points)))
   param2.points<-c(param2.points,runif(nrep-round(nrep/2),min=min(param2.points),max=max(param2.points)))
   param1.points<-sample(param1.points,size=length(param1.points),replace=FALSE)
