@@ -9,7 +9,7 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA), 
 #and the multiple alphas and sigmas (OUMVA). 
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), root.station=TRUE, ip=1, plot.resid=TRUE, clade=NULL){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), root.station=TRUE, ip=1, plot.resid=TRUE, clade=NULL, eigenvect=FALSE){
 	
 
 	#Makes sure the data is in the same order as the tip labels
@@ -293,13 +293,17 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	hess.eig<-eigen(h,symmetric=TRUE)
 	#If eigenvect is TRUE then the eigenvector and index matrix will appear in the list of objects 
 	obj$eigval<-signif(hess.eig$values,2)
-	if(any(obj$eigval<0)){
+	if(any(obj$eigval<0) || eigenvect){
 		obj$eigvect<-round(hess.eig$vectors, 2)
 		obj$index.matrix <- index.mat
 		rownames(obj$index.matrix)<-c("alpha","sigma.sq")
 		colnames(obj$index.matrix)<-levels(int.states)
 		#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution
-		obj$Diagnostic<-'The objective function may be at a saddle point -- check eigenvectors or try a simpler model'
+    if (any(obj$eigval<0)) {
+		  obj$Diagnostic<-'The objective function may be at a saddle point -- check eigenvectors or try a simpler model'
+    }
+    else{obj$Diagnostic<-'Arrived at a reliable solution'}
+
 	}
 	else{obj$Diagnostic<-'Arrived at a reliable solution'}
 	
