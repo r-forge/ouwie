@@ -104,8 +104,6 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 
   #include the MLE in the set
   likelihoods<-c(likelihoods,globalMLE$loglik)
-  print("likelihoods")
-  print(likelihoods)
   param1.points<-c(param1.points,as.numeric(focal.param.df[3,1]))
   param2.points<-c(param2.points,as.numeric(focal.param.df[3,2]))
   
