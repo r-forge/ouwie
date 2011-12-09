@@ -2,9 +2,10 @@
 
 #written by Brian C. O'Meara
 
-library(akima)
+require(akima)
+require(grDevices)
 
-OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3,  levels=c(0.5,1,1.5,2),likelihood.boundary=100,...){
+OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3,  levels=c(0.5,1,1.5,2),likelihood.boundary=Inf,lwd=2,...){
   #focal.param is something like c("alpha_2","sigma.sq_1"). They are then split on "_"
   if(length(focal.param)!=2) {
      stop("need a focal.param vector of length two")
@@ -31,13 +32,25 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
     return(x)
   }
   
-  #now get our random points, sampling most densely near the MLE
+  #now get our random points, sampling most densely near the MLE (likely where our contour lines will be drawn)
   param1.points<-replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,1]),sd=as.numeric(focal.param.df[4,1])))
   param2.points<-replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,2]),sd=as.numeric(focal.param.df[4,2])))
   param1.points<-c(param1.points,replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,1]),sd=sd.mult*as.numeric(focal.param.df[4,1]))))
   param2.points<-c(param2.points,replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,2]),sd=sd.mult*as.numeric(focal.param.df[4,2]))))
-  param1.points<-c(param1.points,runif(nrep-round(nrep/2),min=min(param1.points),max=max(param1.points)))
-  param2.points<-c(param2.points,runif(nrep-round(nrep/2),min=min(param2.points),max=max(param2.points)))
+
+  #now let's figure out what the overall boundaries will be
+  xlim=range(param1.points,as.numeric(focal.param.df[3,1])-1.96*as.numeric(focal.param.df[4,1]),as.numeric(focal.param.df[3,1])+1.96*as.numeric(focal.param.df[4,1]))
+  ylim=range(param2.points,as.numeric(focal.param.df[3,2])-1.96*as.numeric(focal.param.df[4,2]),as.numeric(focal.param.df[3,2])+1.96*as.numeric(focal.param.df[4,2]))
+  if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
+    xlim=range(c(param1.points,param2.points,xlim,ylim))
+    ylim=range(c(param1.points,param2.points,ylim,xlim))
+  }
+
+  #and sample the rest of the points from this space
+  param1.points<-c(param1.points,runif(nrep-round(nrep/2),min=min(xlim),max=max(xlim)))
+  param2.points<-c(param2.points,runif(nrep-round(nrep/2),min=min(ylim),max=max(ylim)))
+  
+  #now randomize order, in case we later want to do incremental saving or drawing
   param1.points<-sample(param1.points,size=length(param1.points),replace=FALSE)
   param2.points<-sample(param2.points,size=length(param2.points),replace=FALSE)
   
@@ -69,7 +82,8 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
       }
     }
     loglik<-OUwie.fixed(phy=phy,data=data, model=model,root.station=root.station, alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade)$loglik
-    return(loglik)
+    print(paste("loglik is ",loglik))
+    return(-loglik)
   }
   
   optimizeSemifixed<-function(X,phy,data,model,root.station,clade,globalMLE) {
@@ -86,46 +100,36 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
   params.points<-data.frame(param1.points,param2.points)
   names(params.points)<-focal.param
   params.points.list<-split(params.points,row(params.points),drop=TRUE)
-  likelihoods<-(-1*simplify2array(lapply(params.points.list,optimizeSemifixed,phy=phy,data=data, model=model,root.station=root.station, clade=clade, globalMLE=globalMLE)))
+  likelihoods<-(simplify2array(lapply(params.points.list,optimizeSemifixed,phy=phy,data=data, model=model,root.station=root.station, clade=clade, globalMLE=globalMLE)))
 
   #include the MLE in the set
   likelihoods<-c(likelihoods,globalMLE$loglik)
+  print("likelihoods")
+  print(likelihoods)
   param1.points<-c(param1.points,as.numeric(focal.param.df[3,1]))
   param2.points<-c(param2.points,as.numeric(focal.param.df[3,2]))
   
-  xlim=range(param1.points)
-  ylim=range(param2.points)
-  if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
-    xlim=range(c(param1.points,param2.points))
-    ylim=range(c(param1.points,param2.points))
-  }
-  likelihoods.rescaled<-likelihoods-min(likelihoods)
-  while(length(likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)])<5) { #just to deal with extreme cases with few points
+  likelihoods.rescaled<-(-1)*likelihoods
+  likelihoods.rescaled<-likelihoods.rescaled-min(likelihoods.rescaled)
+  goodLikelihoodsIndex<-which(likelihoods.rescaled<likelihood.boundary)
+  while(length(goodLikelihoodsIndex)<5) { #just to deal with extreme cases with few points
      likelihood.boundary<-2*likelihood.boundary
+      goodLikelihoodsIndex<-which(likelihoods.rescaled<likelihood.boundary)
   }
   #interpolated.points<-interp(x= param1.points[which(likelihoods.rescaled<likelihood.boundary)],y=param2.points[which(likelihoods.rescaled<likelihood.boundary)],z=likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)],xo=seq(min(param1.points), max(param1.points), length = 400),yo=seq(min(param1.points), max(param1.points), length = 400),duplicate="median",linear=FALSE,extrap=TRUE)
-  interpolated.points<-interp(x= param1.points[which(likelihoods.rescaled<likelihood.boundary)],y=param2.points[which(likelihoods.rescaled<likelihood.boundary)],z=likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)],linear=FALSE,extrap=TRUE)
-
-  
-  #SOMETHING IS DEEPLY WRONG HERE, B/C LIKELIHOODS HERE ARE NOT THE SAME AS WHAT IS OUTPUT
-  
-  print("likelihoodsrescaled.in.domain")
-  print(likelihoods.rescaled[which(likelihoods.rescaled<likelihood.boundary)])
-  print(interpolated.points)
- # contour(interpolated.points, xlim=xlim,ylim=ylim,xlab=focal.param[1],ylab=focal.param[2],levels=levels, ...)
-  levels<-NULL
-  contour(interpolated.points, xlab=focal.param[1],ylab=focal.param[2], ...)
+  interpolated.points<-interp(x= param1.points[goodLikelihoodsIndex],y=param2.points[goodLikelihoodsIndex],z=likelihoods.rescaled[goodLikelihoodsIndex],linear=FALSE,extrap=TRUE,xo=seq(min(xlim), max(xlim), length = 400),yo=seq(min(ylim), max(ylim), length = 400))
+  #image(interpolated.points$x,interpolated.points$y,log(abs(interpolated.points$z)),xlab=focal.param[1],ylab=focal.param[2],xlim=xlim,ylim=ylim,col=gray((701:1000)/1000)) #the log here is just to flatten out the space to make plotting prettier
+  contour(interpolated.points, xlim=xlim,ylim=ylim,xlab=focal.param[1],ylab=focal.param[2], levels=levels,add=FALSE,lwd=lwd,...)
   if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
     plot.range<-range(c(param1.points,param2.points))
     lines(x= plot.range,y= plot.range,lty="dotted")
   }
   points(x=as.numeric(focal.param.df[3,1]),y=as.numeric(focal.param.df[3,2]),pch=20,col="red")
-  print(paste("MLE is at c(",as.numeric(focal.param.df[3,1]),",",as.numeric(focal.param.df[3,2]),")"))
   lines(x=c(as.numeric(focal.param.df[3,1])-1.96*as.numeric(focal.param.df[4,1]),as.numeric(focal.param.df[3,1])+1.96*as.numeric(focal.param.df[4,1])),y=rep(as.numeric(focal.param.df[3,2]),2))
   lines(x=rep(as.numeric(focal.param.df[3,1]),2),y=c(as.numeric(focal.param.df[3,2])-1.96*as.numeric(focal.param.df[4,2]),as.numeric(focal.param.df[3,2])+1.96*as.numeric(focal.param.df[4,2])))
   
   
-  finalResults<-data.frame(param1.points,param2.points,-1*likelihoods)
+  finalResults<-data.frame(param1.points,param2.points,likelihoods)
   names(finalResults)<-c(focal.param,"loglik")
   return(finalResults)             
 }
