@@ -1,11 +1,8 @@
 #Does contour plot for likelihood surface for pair of parameters
 
-#written by Brian C. O'Meara
+#written by Brian C. OMeara
 
-require(akima)
-require(grDevices)
-
-OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3,  levels=c(0.5,1,1.5,2),likelihood.boundary=Inf,lwd=2,...){
+OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3, levels=c(0.5,1,1.5,2),likelihood.boundary=Inf,lwd=2, ...){
   #focal.param is something like c("alpha_2","sigma.sq_1"). They are then split on "_"
   if(length(focal.param)!=2) {
      stop("need a focal.param vector of length two")
@@ -38,7 +35,7 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
   param1.points<-c(param1.points,replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,1]),sd=sd.mult*as.numeric(focal.param.df[4,1]))))
   param2.points<-c(param2.points,replicate(n=round(nrep/4),expr=rnorm.bounded(mean=as.numeric(focal.param.df[3,2]),sd=sd.mult*as.numeric(focal.param.df[4,2]))))
 
-  #now let's figure out what the overall boundaries will be
+  #now lets figure out what the overall boundaries will be
   xlim=range(param1.points,as.numeric(focal.param.df[3,1])-1.96*as.numeric(focal.param.df[4,1]),as.numeric(focal.param.df[3,1])+1.96*as.numeric(focal.param.df[4,1]))
   ylim=range(param2.points,as.numeric(focal.param.df[3,2])-1.96*as.numeric(focal.param.df[4,2]),as.numeric(focal.param.df[3,2])+1.96*as.numeric(focal.param.df[4,2]))
   if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
@@ -100,7 +97,7 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
   params.points<-data.frame(param1.points,param2.points)
   names(params.points)<-focal.param
   params.points.list<-split(params.points,row(params.points),drop=TRUE)
-  likelihoods<-(simplify2array(lapply(params.points.list,optimizeSemifixed,phy=phy,data=data, model=model,root.station=root.station, clade=clade, globalMLE=globalMLE)))
+	likelihoods<-(sapply(params.points.list,optimizeSemifixed,phy=phy,data=data, model=model,root.station=root.station, clade=clade, globalMLE=globalMLE,simplify=TRUE))
 
   #include the MLE in the set
   likelihoods<-c(likelihoods,globalMLE$loglik)

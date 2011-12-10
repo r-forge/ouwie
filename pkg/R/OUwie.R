@@ -10,7 +10,6 @@
 #and the multiple alphas and sigmas (OUMVA). 
 
 OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), root.station=TRUE, ip=1, plot.resid=TRUE, clade=NULL, eigenvect=FALSE){
-	
 
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])

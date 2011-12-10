@@ -4,20 +4,21 @@
 \description{Plots likelihood surface for pairs of free parameters for generalized Ornstein-Uhlenbeck-based Hansen models of continuous characters evolving under discrete selective regimes.}
 \usage{
 OUwie.contour(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),
-root.station=TRUE, clade=NULL,focal.param=NULL,nrep=1000, sd.mult=3, levels=c(0.5,1,1.5,2), ...)
+root.station=TRUE, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3, levels=c(0.5,1,1.5,2), likelihood.boundary=Inf, lwd=2, \dots)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes.}
 \item{data}{a data matrix containing species information (see Details).}
 \item{model}{models to fit to comparative data (see Details).}
-\item{root.station}{a logical indicating whether the starting state, \eqn{\theta_0}{theta_0}, should be estimated (see Details).} 
-\item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
+\item{root.station}{a logical indicating whether the starting state, \eqn{\theta_0}{theta_0}, should be estimated (see Details).}
 \item{focal.param}{a character vector with the pair of parameters (sigma.sq and/or alpha) to plot (see Details).}
+\item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
 \item{nrep}{the number of points to use for the likelihood surface.}
 \item{sd.mult}{the sd for the normal distribution to pull random points from is sd.mult * se for each parameter.}
 \item{levels}{the levels at which to draw contour lines, measured as lnL units away from the best values.}
-
-
+\item{likelihood.boundary}{default = Inf}
+\item{lwd}{a graphical control for the width of the line}
+\item{\dots}{Additional arguments to be passed to the plot device} 
 }
 \details{
 This function creates a plot of the likelihood surface for a pair of parameters, letting the other parameters find their own optima. It can be very slow, as it involves optimization \code{nrep} times (though with two fewer parameters than with the chosen model, as the focal parameter values are fixed). It uses half its points to sample near the MLE and half to uniformly sample across a range. However, it is important to do as on some trees and with some models, certain parameters may correlate with each other.
@@ -35,7 +36,7 @@ IMPORTANT: this currently written to only do sigma.sq and/or alpha, not theta.
 data(tworegime)
 
 #Examine the surface for the two sigma values. You will probably want to do far more points than 100
-OUwie.contour(tree,trait,model=c("OUMV"),root.station=TRUE, nrep=100, focal.param=c("sigma.sq_1","sigma.sq_2"),bty="n")
+OUwie.contour(tree,trait, model=c("OUMV"), root.station=TRUE, nrep=100, focal.param=c("sigma.sq_1","sigma.sq_2"), bty="n")
 
 }
 \references{
