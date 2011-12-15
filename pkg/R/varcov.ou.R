@@ -17,12 +17,10 @@ varcov.ou<-function(phy, edges, Rate.mat, root.state){
 	n.cov1=matrix(rep(0,n*n), n, n)
 	n.cov2=matrix(rep(0,n*n), n, n)
 	nodecode=matrix(c(ntips+1,0,root.state),1,3)
-	
+
 	for(i in 1:length(edges[,1])){
-		
-		anc = edges[i, 2]
-		desc = edges[i, 3]
-		
+		anc = edges[i,2]
+		desc = edges[i,3]
 		newregime=which(edges[i,5:(k+4)]==1)
 		current=edges[i,4]
 		
@@ -39,25 +37,26 @@ varcov.ou<-function(phy, edges, Rate.mat, root.state){
 		if(oldregime==newregime){
 			newtime=current
 			nodevar1[i]=alpha[oldregime]*(newtime-oldtime)
-			nodevar2[i]=sigma[oldregime]*exp(2*alpha[oldregime]*(newtime+oldtime)/2)*(newtime-oldtime)
+			nodevar2[i]=sigma[oldregime]*((exp(2*alpha[oldregime]*newtime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
 		}
 		else{
 			newtime=current-((current-oldtime)/2)
-			epoch1a=(alpha[oldregime])*(newtime-oldtime)
-			epoch1b=sigma[oldregime]*exp(2*alpha[oldregime]*(newtime+oldtime)/2)*(newtime-oldtime)
+			epoch1a=alpha[oldregime]*(newtime-oldtime)
+			epoch1b=sigma[oldregime]*((exp(2*alpha[oldregime]*newtime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
 			oldtime=newtime
 			newtime=current
 			epoch2a=alpha[newregime]*(newtime-oldtime)
-			epoch2b=sigma[newregime]*exp(2*alpha[newregime]*(newtime+oldtime)/2)*(newtime-oldtime)
+			epoch2b=sigma[newregime]*((exp(2*alpha[newregime]*newtime)-exp(2*alpha[newregime]*oldtime))/(2*alpha[newregime]))
 			nodevar1[i]<-epoch1a+epoch2a
 			nodevar2[i]<-epoch1b+epoch2b
 		}
 		oldregime=newregime
 		n.cov1[edges[i,2],edges[i,3]]=nodevar1[i]
 		n.cov2[edges[i,2],edges[i,3]]=nodevar2[i]
+		
 	}
-	
-#Remove nodecode matrix from memory
+
+	#Remove nodecode matrix from memory
 	rm(nodecode)
 	vcv1<-mat.gen(n.cov1,phy)
 	vcv2<-mat.gen(n.cov2,phy)
@@ -80,25 +79,27 @@ mat.gen<-function(mat,phy){
 	A[phy$edge]=1
 	mm<-c(1:n)
 	Nt<-t(t(A)*mm)
-#Convert to a sparse matrix
+	#Convert to a sparse matrix
 	Nt<-as.matrix.csr(Nt)
 	rm(A)
 	
-#Generates the mystical S matrix
+	#Generates the mystical S matrix
 	S<-matrix(0,n,n)
 	for(i in 1:n){
 		nn<-Ancestors(phy,i)
 		S[nn,i]<-1
 	}
-#Convert to a sparse matrix
+
+	#Convert to a sparse matrix
 	S<-as.matrix.csr(S)
 	
-#Create a matrix of sums for each node
+	#Create a matrix of sums for each node
 	temp<-mat%*%S+mat
 	n.covsums=apply(as.matrix(temp), 2, sum)
+
 	rm(temp)
 	rm(mat)
-#Generates a matrix that lists the descendants for each ancestral node
+	#Generates a matrix that lists the descendants for each ancestral node
 	H.temp=Nt%*%S+Nt
 	rm(Nt)
 	rm(S)
@@ -108,7 +109,7 @@ mat.gen<-function(mat,phy){
 	
 	new.mat<-matrix(0,ntips,ntips)
 	diag(new.mat)=n.covsums[1:ntips]
-#Enters covariances
+	#Enters covariances
 	for(i in 1:length(H.mat[,1])){
 		temp=unique(H.mat[i,])
 		temp=temp[temp!=0]
@@ -160,7 +161,6 @@ Children = function(x, node){
 	if(length(node)==1) return(allChildren(x)[[node]])
 	allChildren(x)[node]
 }
-
 
 Descendants = function(x, node, type=c("tips","children","all")){
     type <- match.arg(type)
