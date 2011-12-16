@@ -69,7 +69,6 @@ varcov.ou<-function(phy, edges, Rate.mat, root.state){
 }
 
 #Utility for building a summary matrix -- slow for now, need to work on speeding up
-
 mat.gen<-function(mat,phy){
 	
 	n=max(phy$edge[,1])
