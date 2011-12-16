@@ -46,18 +46,18 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, assume.station=TRUE){
 					newtime=current
 					
 					if(newregime==j){
-						nodevar[i]=exp(-alpha[oldregime])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
-									   }
+						nodevar[i]=exp(-alpha[rootstate])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
+					}
 					else{
 						nodevar[i]=0
 					}
 				}
 				else{
 					newtime=current-((current-oldtime)/2)
-					epoch1=exp(-alpha[oldregime])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
+					epoch1=exp(-alpha[rootstate])*(exp(alpha[oldregime]*newtime)-exp(alpha[oldregime]*oldtime))
 					oldtime=newtime
 					newtime=current
-					epoch2=exp(-alpha[newregime])*(exp(alpha[newregime]*newtime)-exp(alpha[newregime]*oldtime))
+					epoch2=exp(-alpha[rootstate])*(exp(alpha[newregime]*newtime)-exp(alpha[newregime]*oldtime))
 					if(oldregime==j){
 						nodevar[i]=epoch1
 					}
