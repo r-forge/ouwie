@@ -35,8 +35,8 @@ IMPORTANT: this currently written to only do sigma.sq and/or alpha, not theta.
 \examples{
 data(tworegime)
 
-#Examine the surface for the two sigma values. You will probably want to do far more points than 100
-OUwie.contour(tree,trait, model=c("OUMV"), root.station=TRUE, nrep=100, focal.param=c("sigma.sq_1","sigma.sq_2"), bty="n")
+#Examine the surface for the two sigma values. You will probably want to do far more points than 10
+OUwie.contour(tree,trait, model=c("OUMV"), root.station=TRUE, nrep=10, focal.param=c("sigma.sq_1","sigma.sq_2"), bty="n")
 
 }
 \references{
