@@ -33,6 +33,11 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		pp<-int-length(phy$tip.label)
 		phy$node.label[pp]<-2
 	}
+	if (is.character(model)) {
+		if (model == "BM1"| model == "OU1"){
+			simmap.tree=FALSE
+		}
+	}
 	if(simmap.tree==TRUE){
 		k<-length(colnames(phy$mapped.edge))
 		int.states<-factor(colnames(phy$mapped.edge))
@@ -57,18 +62,22 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		edges=edges[sort.list(edges[,1]),]
 	}
 	if(simmap.tree==FALSE){
-		k<-length(levels(int.states))
 		int.states<-factor(phy$node.label)
+		k<-length(levels(int.states))
 		phy$node.label=as.numeric(int.states)
 		tip.states<-factor(data[,1])
 		data[,1]<-as.numeric(tip.states)
 		#A boolean for whether the root theta should be estimated -- default is that it should be.
 		root.station=root.station
-		
 		if (is.character(model)) {			
 			if (model == "BM1"| model == "OU1"){
 				##Begins the construction of the edges matrix -- similar to the ouch format##
 				#Makes a vector of absolute times in proportion of the total length of the tree
+				k=length(levels(tip.states))
+				phy$node.label<-sample(c(1,2),phy$Nnode, replace=T)
+				int.states=length(levels(tip.states))
+				#Since we only really have one global regime, make up the internal nodes -- this could be improved
+				phy$node.label<-as.numeric(int.states)
 				branch.lengths=rep(0,(n-1))
 				branch.lengths[(ntips+1):(n-1)]=branching.times(phy)[-1]/max(branching.times(phy))
 				
