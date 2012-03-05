@@ -14,6 +14,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
 	data<-data[phy$tip.label,]
+
 	#Values to be used throughout
 	n=max(phy$edge[,1])
 	ntips=length(phy$tip.label)
@@ -64,8 +65,11 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	if(simmap.tree==FALSE){
 		#Obtain a a list of all the regime states. This is a solution for instances when tip states and 
 		#the internal nodes are not of equal length:
-		tot.states<-factor(c(phy$node.label,data[,1]))
+		tot.states<-factor(c(phy$node.label,as.character(data[,1])))
+
 		k<-length(levels(tot.states))
+		
+		cat(levels(tot.states),"\n")
 		
 		int.states<-factor(phy$node.label)
 		phy$node.label=as.numeric(int.states)		
@@ -79,7 +83,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				##Begins the construction of the edges matrix -- similar to the ouch format##
 				#Makes a vector of absolute times in proportion of the total length of the tree
 				k=length(levels(tip.states))
-				phy$node.label<-sample(c(1,2),phy$Nnode, replace=T)
+				phy$node.label<-sample(c(1:k),phy$Nnode, replace=T)
 				int.states=length(levels(tip.states))
 				#Since we only really have one global regime, make up the internal nodes -- this could be improved
 				phy$node.label<-as.numeric(int.states)
@@ -271,7 +275,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				colnames(obj$Param.est)<-levels(tot.states)
 				theta <- dev.theta(out$solution)
 				obj$theta <- matrix(theta[1,], 1,2)
-				colnames(obj$theta) <- c("Estimate", "SE")			}
+				colnames(obj$theta) <- c("Estimate", "SE")			
+			}
 		}
 		if (root.station == FALSE){
 			if (model == "OU1"){
