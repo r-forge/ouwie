@@ -39,7 +39,7 @@ IMPORTANT: this currently written to only do sigma.sq and/or alpha, not theta.
 \examples{
 data(tworegime)
 
-#Examine the surface for the two sigma values. You will probably want to do far more points than 10
+#Examine the surface for the two sigma values. You will want to do at least nrep=200 points, probably more (just a few are done here for speed, but the plot will not be very meaningful)
 OUwie.contour(tree,trait, model=c("OUMV"), root.station=TRUE, nrep=10, focal.param=c("sigma.sq_1","sigma.sq_2"), bty="n")
 
 }
