@@ -6,6 +6,10 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume
 	
 	n=max(phy$edge[,1])
 	ntips=length(phy$tip.label)
+	if(is.null(root.state)) {
+	  root.state<-which(edges[dim(edges)[1] , ]==1)-4 
+	  edges<-edges[-1*dim(edges)[1],]
+	}
 	if(simmap.tree==TRUE){
 		k=length(colnames(phy$mapped.edge))
 	}
