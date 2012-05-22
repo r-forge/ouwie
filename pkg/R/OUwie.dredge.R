@@ -28,7 +28,7 @@ dredge.util<-function(rgenoud.individual) {
 }
 
 dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,...) {
-  #first check that the rgenoud.individual is well-structured: don't have just states 0 and 3 for sigma mapping, for example
+  #first check that the rgenoud.individual is well-structured: do not have just states 0 and 3 for sigma mapping, for example
   #if it fails this, reject it.
   #convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
   edge.mat.all<-edge.mat(phy,rgenoud.individual)
@@ -151,3 +151,4 @@ edge.mat<-function(phy,rgenoud.individual){
   
   obj
 }
+
