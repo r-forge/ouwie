@@ -18,17 +18,50 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 }
 
 dredge.aicc<-function(rgenoud.individual, phy, data, ...) {
+  #first check that the rgenoud.individual is well-structured: don't have just states 0 and 3 for sigma mapping, for example
+  #if it fails this, reject it.
   #convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
-  #call dev.dredge
+  #call dev.optimize
+  #which is an nloptr wrapper to call dev.dredge
   #convert likelihood to AICC
   #return AICC
 }
 
 
+dev.optimize<-(rgenoud.individual,edges.ouwie,regimes.mat,data,root.station) {
+  
+  
+}
 
 
-dev.dredge<-function(p,simmap.tree,data,model,root.station,focal.param.vector,clade,globalMLE) { #globalMLE is just for figuring out the structure of alpha and sigma.sq
-  nRegimes<-dim(globalMLE$index.matrix)[2]
+#edges.ouwie is the edges matrix with the extra columns for regimes
+dev.dredge<-function(p,rgenoud.individual,edges.ouwie,regimes.mat,data,Rate.mat,index.mat,root.station) { 
+  nRegimes<-dim(regimes.mat)[1]
+  Rate.mat.full <- matrix(0, 3, nRegimes) #first row is alpha, second row is sigma, third is theta. Value of zero initially
+  k.theta<-max(regimes.mat[,1])
+  k.sigma<-max(regimes.mat[,2])
+  k.alpha<-max(regimes.mat[,3])
+  p.index<-1
+  for(k in sequence(k.theta)) {
+    Rate.mat.full[1,which(Rate.mat.full[1,]==k)]<-p[p.index]
+    p.index<-p.index+1
+  }
+  for(k in sequence(k.sigma)) {
+    Rate.mat.full[2,which(Rate.mat.full[2,]==k)]<-p[p.index]
+    p.index<-p.index+1
+  }
+  for(k in sequence(k.alpha)) {
+    Rate.mat.full[3,which(Rate.mat.full[3,]==k)]<-p[p.index]
+    p.index<-p.index+1
+  }
+  Rate.mat<-Rate.mat.full[1:2,]
+  N<-length(x[,1])
+  V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state)
+  W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, assume.station=root.station)
+  
+  
+  
+  
   alpha<-rep(NA,nRegimes)
   sigma.sq<-rep(NA,nRegimes)
   for (freeParam in sequence(max(globalMLE$index.matrix))) {
@@ -54,7 +87,58 @@ dev.dredge<-function(p,simmap.tree,data,model,root.station,focal.param.vector,cl
       }
     }
   }
-  loglik<-OUwie.fixed(phy=phy,data=data, model=model,simmap.tree=simmap.tree,root.station=root.station,alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade)$loglik
+#  loglik<-OUwie.fixed(phy=phy,data=data, model=model,simmap.tree=simmap.tree,root.station=root.station,alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade)$loglik
   return(-loglik)
 }
 
+#Steps:
+#Create possible regimes from regime.vector -- done
+#Write tree traversal to obtain possible regimes for each edge -- scores each in edges.mat
+#Output is edge.ouwie
+edge.mat<-function(phy,regime.vector){
+  
+  obj=NULL
+  #Values to be used throughout
+  n=max(phy$edge[,1])
+  ntips=length(phy$tip.label)
+  
+  ##Begins the construction of the edges matrix -- similar to the ouch format##
+  #Makes a vector of absolute times in proportion of the total length of the tree
+  branch.lengths=rep(0,(n-1))
+  branch.lengths[(ntips+1):(n-1)]=branching.times(phy)[-1]/max(branching.times(phy))
+  
+  #New tree matrix to be used for subsetting regimes
+  edge.ouwie=cbind(c(1:(n-1)),phy$edge,phy$edge.length)
+  edge.ouwie=edge.ouwie[sort.list(edge.ouwie[,3]),]
+  
+  edge.ouwie[,4]=branch.lengths
+  
+  tot<-length(regime.vector)/3
+  tmp<-matrix(,tot,1)
+  #Generates all strings in the regime.vector:
+  for(i in 1:tot){
+    tmp[i,]<-paste(regime.vector[i],regime.vector[i+tot],regime.vector[i+(2*tot)])
+  }
+  #Finds the unique combinations to designate regimes:
+  reg.list<-unique(tmp)
+  #Convert tmp to numeric regime designation:
+  for(i in 1:tot){
+    tmp[i,]<-which(tmp[i,]==reg.list)
+  }
+  #Convert to numeric:
+  tmp<-as.numeric(tmp)
+  #Creates the regime.mat for internal use:
+  obj$regime.mat<-matrix(as.numeric(unlist(strsplit(reg.list," "))),3,3)
+  
+  regime <- matrix(0,nrow=length(tmp),ncol=length(unique(tmp)))
+  #Generates an indicator matrix from the regime vector
+  for (i in 1:length(tmp)) {
+    regime[i,tmp[i]] <- 1 
+  }
+  #Finishes the edges matrix
+  edge.ouwie=cbind(edge.ouwie,regime)
+  #Resort the edge matrix so that it looks like the original matrix order:
+  obj$edge.ouwie=edge.ouwie[sort.list(edge.ouwie[,1]),]
+  
+  obj
+}
