@@ -1,4 +1,4 @@
-OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=10, pop.size=NULL,print.level=0) {
+OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=10, pop.size=NULL,print.level=0,maxeval=500) {
   #criterion: If aicc or aic, use rgenoud, where the fitness is the score (and try to minimize)
   #    if rjmcmc, use an rjmcmc approach
   #alpha.max.k=3: allows for three OU regimes and one regime where alpha is set to ~0 (brownian motion)
@@ -19,7 +19,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
    nodes<-Nnode(phy,internal.only=FALSE)
    Domains<-matrix(c(rep(1,nodes),rep(1,nodes),rep(0,nodes),rep(theta.max.k,nodes),rep(sigma.max.k,nodes),rep(alpha.max.k,nodes)),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE)
  #  results<-genoud(fn=dredge.akaike, starting.values=starting.values, max=FALSE,nvars=3*Nnode(phy,internal.only=FALSE), data.type.int=TRUE,boundary.enforcement=2,Domains=matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE)),rep(theta.max.k,Nnode(phy,internal.only=FALSE)),rep(sigma.max.k,Nnode(phy,internal.only=FALSE)),rep(alpha.max.k,Nnode(phy,internal.only=FALSE))),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE), wait.generations=wait.generations, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy, data, criterion=criterion)
-   results<-genoud(fn=dredge.akaike, max=FALSE,nvars=3*nodes, data.type.int=TRUE, print.level=print.level, boundary.enforcement=2, Domains=Domains, wait.generations=wait.generations, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy=phy, data=data, criterion=criterion)
+   results<-genoud(fn=dredge.akaike, max=FALSE,nvars=3*nodes, data.type.int=TRUE, print.level=print.level, boundary.enforcement=2, Domains=Domains, wait.generations=wait.generations, maxeval=maxeval, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy=phy, data=data, criterion=criterion)
   }
 }
 
@@ -27,40 +27,35 @@ dredge.util<-function(rgenoud.individual) {
 	return(list(k.theta=max(rgenoud.individual[1:(length(rgenoud.individual)/3)]),k.sigma=max(rgenoud.individual[(1+length(rgenoud.individual)/3):(2*length(rgenoud.individual)/3)]),k.alpha=max(rgenoud.individual[(1+2*length(rgenoud.individual)/3):length(rgenoud.individual)])))
 }
 
-dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,...) {
+dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,...) {
   #first check that the rgenoud.individual is well-structured: don't have just states 0 and 3 for sigma mapping, for example
   #if it fails this, reject it.
   #convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
   edge.mat.all<-edge.mat(phy,rgenoud.individual)
   #call dev.optimize
-  lnL<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regimes.mat=edge.mat.all$regime, data=data,root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)
-  print(paste('dredge.akaike lnL is ',lnL))
+  lnL<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regimes.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)
   #which is an nloptr wrapper to call dev.dredge
   #convert likelihood to AICC
   K<-sum(apply(edge.mat.all$regime, 2, max))
-  print(paste("K is ",K))
   result<-(2*lnL) + (2*K)
   if (criterion=="aicc") {
     n=Ntip(phy)
-    print(paste("n is ",n))
    result<-2*lnL + (2*K * n / (n - K - 1))
   }
-  print(paste("AIC or AICC is ",result))
   #return AICC
   return(result)
 }
 
 
-dev.optimize<-function(edges.ouwie,regimes.mat,data,root.station,lb,ub,ip,phy=phy) {
+dev.optimize<-function(edges.ouwie,regimes.mat,data,root.station,maxeval,lb,ub,ip,phy=phy) {
   np<-sum(apply(regimes.mat, 2, max))
   lower = rep(lb, np)
   upper = rep(ub, np)
   ip<-ip
 #  opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5, "xtol_rel"=.Machine$double.eps^0.5)
-  opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="10", "ftol_rel"=.Machine$double.eps^0.5, "xtol_rel"=.Machine$double.eps^0.5)
+  opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"=as.character(maxeval), "ftol_rel"=.Machine$double.eps^0.5, "xtol_rel"=.Machine$double.eps^0.5)
 
   out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regimes.mat=regimes.mat)
-  print(-1*out$objective)
   return(-1*out$objective) 
 }
 
@@ -99,7 +94,6 @@ dev.dredge<-function(p,edges.ouwie,regimes.mat,data,root.station,phy) {
   res<-W%*%theta-x		
   q<-t(res)%*%solve(V,res)
   logl <- -.5*(N*log(2*pi)+as.numeric(DET$modulus)+q[1,1])
-  print(paste("p = ",paste(p,sep=" ",collapse=" "),"-logl = ",-logl))
   return(-logl)
 }
 
