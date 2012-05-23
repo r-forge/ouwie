@@ -46,13 +46,53 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"=as.character(maxeval), "ftol_rel"=.Machine$double.eps^0.5)
 		out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat)
 
-		obj = NULL
-		obj$loglik <- -out$objective
-		obj$AIC <- -2*obj$loglik+2*K
-		obj$AICc <- -2*obj$loglik + (2*K * n / (n - K - 1))
+		obj = list(loglik = -out$objective, AIC = -2*out$objective+2*K,AICc=-2*out$objective + (2*K * n / (n - K - 1)),solution=out$solution, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat,start=start,rgenoud.individual=results$par)
+		class(obj)<-"ouwie.dredge.result"		
 
-		obj
+		return(obj)
 	}
+}
+
+print.ouwie.dredge.result <- function(x, ...) {
+	K<-sum(unlist(dredge.util(x$rgenoud.individual)))
+	n<-Ntip(x$phy)
+	output<-c(x$loglik,x$AIC,x$AICc,n,dim(x$regime.mat)[1],K,c(unlist(dredge.util(x$rgenoud.individual))))
+	names(output)<-c("negLnL","AIC","AICc","ntax","n_regimes","K_all","K_theta","K_sigma","K_alpha")
+	print(output)
+	
+	cat("\nRegime matrix\n")
+	colnames(x$regime.mat)<-c("theta","sigma","alpha")
+	rownames(x$regime.mat)<-c(paste("regime_",sequence(dim(x$regime.mat)[1]),sep=""))
+	print(x$regime.mat)
+	
+	regime.mat.params<-x$regime.mat*0
+	p.index<-1
+	for(k in sequence(dredge.util(x$rgenoud.individual)[[1]])) {
+		regime.mat.params[which(x$regime.mat[,1]==k),1]<-x$solution[p.index]
+		p.index<-p.index+1
+	}
+	for(k in sequence(dredge.util(x$rgenoud.individual)[[2]])) {
+		regime.mat.params[which(x$regime.mat[,2]==k),2]<-x$solution[p.index]
+		p.index<-p.index+1
+	}
+	for(k in sequence(dredge.util(x$rgenoud.individual)[[3]])) {
+		regime.mat.params[which(x$regime.mat[,3]==k),3]<-x$solution[p.index]
+		p.index<-p.index+1
+	}
+	cat("\nRate matrix\n")
+	print(regime.mat.params)
+	cat("\n")
+	
+}
+
+plot.ouwie.dredge.result <- function(x, ...) {
+	par(mfcol=c(1,3))
+	plot(x$phy,...)
+	title(main="theta")
+	plot(x$phy,...)
+	title(main="sigma")
+	plot(x$phy,...)
+	title(main="alpha")
 }
 
 dredge.util<-function(rgenoud.individual) {
