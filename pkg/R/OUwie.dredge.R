@@ -111,11 +111,12 @@ dev.dredge<-function(p,edges.ouwie,regimes.mat,data,root.station,phy) {
     Rate.mat.full[3,which(regimes.mat[,3]==k)]<-p[p.index]
     p.index<-p.index+1
   }
-  Rate.mat<-Rate.mat.full[1:2,]
+  Rate.mat<-matrix(Rate.mat.full[1:2,],nrow=2,ncol=nRegimes) #deals with case of single column Rate.mat.full being changed into a vector rather than left as a matrix
   root.state<-NULL
   edges.ouwie.no.root<-edges.ouwie[1:(dim(edges.ouwie)[1]-1),]
   x<-as.matrix(data[,1])
   N<-length(x[,1])
+  
   V<-varcov.ou(phy, edges.ouwie.no.root, Rate.mat, root.state=root.state)
   W<-weight.mat(phy, edges.ouwie.no.root, Rate.mat, root.state=root.state, assume.station=root.station)
   theta<-Rate.mat.full[3,]
