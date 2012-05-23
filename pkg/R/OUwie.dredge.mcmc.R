@@ -14,11 +14,14 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 	bayes.individual<-matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
 	current.state<-measure.proposal(phy=phy, data=data, new.individual=bayes.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval)
 	store.state(current.state,samplesfile,generation=0)
+	labels<-c("generation","posterior","loglik", "prior", "k.theta", "k.sigma", "k.alpha", "nRegimes")
+	cat(labels)
+	write.table(matrix(labels,nrow=1),file=samplesfile,quote=F,sep="\t",row.name=F,col.name=F,append=F)
 	print.state(current.state,samplesfile,generation=0)
 
 	for(generation in sequence(ngen)) {
 		next.state<-measure.proposal(phy, data, new.individual=transform.single(current.state$new.individual), prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip)
-		if ((next.state$posterior / current.state$posterior) > runif(1,0,1)) {
+		if ((next.state$posterior - current.state$posterior) > runif(1,0,1)) {
 			current.state<-next.state
 		}
 		if (generation %% sample.freq == 0) {
@@ -92,18 +95,18 @@ vector.index.safe.offset<-function(x,vec) {
 
 measure.proposal<-function(phy, data, new.individual, prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip) {
 	edge.mat.all<-edge.mat(phy,new.individual)
-	loglik<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik
-	dput(loglik)
+	loglik<-(-1)*dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik
 	prior<-prior.prob(new.individual,prior.k.theta,prior.k.sigma, prior.k.alpha)
 	posterior<-loglik+log(prior)
-	return(list(new.individual=new.individual, loglik=loglik, prior=prior, posterior=posterior, unlist(dredge.util(new.individual)),nRegimes=dim(edge.mat.all$regime)[1]))
+	k.list<-dredge.util(new.individual)
+	return(list(new.individual=new.individual, loglik=loglik, prior=prior, posterior=posterior, k.theta=k.list$k.theta, k.sigma=k.list$k.sigma, k.alpha=k.list$k.alpha,nRegimes=dim(edge.mat.all$regime)[1]))
 }
 
 store.state<-function(current.state,samplesfile,generation) {
-	tmp<-c(current.state$generation,current.state$posterior,current.state$loglik, current.state$prior, current.state$k.theta, current.state$k.sigma, current.state$k.alpha, current.state$nRegimes, current.state$new.individual)
-	write.table(tmp,file=samplesfile,quote=F,sep="\t",row.name=F,col.name=F,append=T)
+	tmp<-c(generation,current.state$posterior,current.state$loglik, current.state$prior, current.state$k.theta, current.state$k.sigma, current.state$k.alpha, current.state$nRegimes, current.state$new.individual)
+	write.table(matrix(tmp,nrow=1),file=samplesfile,quote=F,sep="\t",row.name=F,col.name=F,append=T)
 }
 
 print.state<-function(current.state,samplesfile,generation) {
-	cat("\n",c(current.state$generation,current.state$posterior,current.state$loglik, current.state$prior, current.state$k.theta, current.state$k.sigma, current.state$k.alpha, current.state$nRegimes))
+	cat("\n",c(generation,current.state$posterior,current.state$loglik, current.state$prior, current.state$k.theta, current.state$k.sigma, current.state$k.alpha, current.state$nRegimes))
 }

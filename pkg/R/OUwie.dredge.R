@@ -166,7 +166,7 @@ dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip
 	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"=as.character(maxeval), "ftol_rel"=0.01)
 	
 	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat)
-	print(out$solution)
+	#print(out$solution)
 	obj$loglik<--out$objective
 	obj$pars<-out$solution
 	obj
@@ -206,7 +206,7 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) {
 	DET<-determinant(V, logarithm=TRUE)
 	
 	res<-W%*%theta-x		
-	q<-t(res)%*%solve(V,res)
+	q<-t(res)%*%solve(V,res)  #JEREMY FIX THIS
 	logl <- -.5*(N*log(2*pi)+as.numeric(DET$modulus)+q[1,1])
 	return(-logl)
 }
