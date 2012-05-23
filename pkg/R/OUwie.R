@@ -9,7 +9,7 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA), 
 #and the multiple alphas and sigmas (OUMVA). 
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, plot.resid=TRUE, clade=NULL, eigenvect=FALSE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, plot.resid=TRUE, clade=NULL, eigenvect=FALSE, quiet=FALSE){
 	
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -204,7 +204,10 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		return(-logl)
 	}
 	#Informs the user that the optimization routine has started and starting value is being used (default=1)
-	cat("Begin subplex optimization routine -- Starting value:",ip, "\n")
+	
+	if(quiet==FALSE){
+		cat("Begin subplex optimization routine -- Starting value:",ip, "\n")
+	}
 	
 	lower = rep(lb, np)
 	upper = rep(ub, np)
@@ -242,7 +245,9 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	}
 	
 	#Informs the user that the summarization has begun, output model-dependent and dependent on whether the root theta is to be estimated
-	cat("Finished. Summarizing results.", "\n")	
+	if(quiet==FALSE){
+		cat("Finished. Summarizing results.", "\n")	
+	}
 	if (is.character(model)) {
 		if (model == "BM1"){
 			obj$AIC <- -2*obj$loglik+2*(np+1)
@@ -355,8 +360,10 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		}
 	}
 	
-	#Informs the user that model diagnostics are going to be carried out -- in the future, should it be an option to turn off?
-	cat("Finished. Performing diagnostic tests.", "\n")
+	if(quiet==FALSE){
+		#Informs the user that model diagnostics are going to be carried out -- in the future, should it be an option to turn off?
+		cat("Finished. Performing diagnostic tests.", "\n")
+	}
 	#Calculates the Hessian for use in calculating standard errors and whether the maximum likelihood solution was found
 	obj$Iterations<-out$iterations
 	h <- hessian(x=out$solution, func=dev)

@@ -5,7 +5,7 @@
 \usage{
 OUwie(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),
 simmap.tree=FALSE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, 
-plot.resid=TRUE, clade=NULL, eigenvect=FALSE)
+plot.resid=TRUE, clade=NULL, eigenvect=FALSE, quiet=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes.}
@@ -19,6 +19,7 @@ plot.resid=TRUE, clade=NULL, eigenvect=FALSE)
 \item{plot.resid}{a logical indicating whether the residuals of the model should be plotted. The residuals are ordered in the same way as the tips in the tree, and color coded by selective regime. The default is \code{TRUE}.}
 \item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
 \item{eigenvect}{a logical indicating whether a matrix of eigenvectors should be written to the working directory. The default is \code{FALSE} (see Details).}
+\item{quiet}{a logical indicating whether progress should be written to the screen. The default is \code{FALSE}.}
 }
 \details{
 This function fits various likelihood models for continuous characters evolving under discrete selective regimes. The function returns parameter estimates and their approximate standard errors. The R package \code{nloptr} provides a common interface to NLopt, an open-source library for nonlinear optimization. The likelihood function is maximized using the bounded subplex optimization routine (\code{NLOPT_LN_SBPLX}). As input all \code{OUwie} requires is a tree and a data matrix. The tree must be of class \dQuote{phylo} and must contain the ancestral selective regimes as internal node labels. Internal node labels can be applied manually or from some sort of ancestral state reconstruction procedure (BayesTraits, \code{ape}, \code{diversitree}, SIMMAP, etc.), which would then be brought into OUwie. This is essentially what is required by \code{ouch} and Brownie (though Brownie provides built-in ancestral state reconstruction capabilities). The data matrix must have column entries in the following order: [,1] species names, [,2] current selective regime, and [,3] the continuous trait of interest. Alternatively, a user can specify a particular clade, by inputting a pair of species whose mrca is the root of the clade of interest [e.g., \code{clade}=c("taxaA","taxaB")]. OUwie will automatically assign internal node labels and update the data matrix according to this clade designation. 

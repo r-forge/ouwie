@@ -9,9 +9,11 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 #so each individual for rgenoud has theta1, theta2, theta3....,sigma1, sigma2, sigma3, ....,alpha1, alpha2, alpha3, where theta1 is the mapping to the theta free parameter for node 1, and so forth
 
 	#Coerce the data so that it will run in OUwie -- using values of OU1 as the starting points: 
+	cat("Fitting OU1 to obtain starting values","\n")
+	
 	data2<-data.frame(as.character(data[,1]),sample(c(1:2),length(data[,1]), replace=T),data[,2],stringsAsFactors=FALSE)
 	phy$node.label<-sample(c(1:2),phy$Nnode, replace=T)
-	start<-OUwie(phy,data2,model=c("OU1"),plot.resid=FALSE)
+	start<-OUwie(phy,data2,model=c("OU1"),plot.resid=FALSE, quiet=TRUE)
 	ip<-matrix(c(rep(start$theta[,1],Nnode(phy,internal.only=FALSE)),rep(start$Param.est[2],Nnode(phy,internal.only=FALSE)),rep(start$Param.est[1],Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
 
 	data<-data.frame(data[,2], data[,2], row.names=data[,1])
@@ -21,22 +23,35 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		if (is.null(pop.size)) {
 			pop.size<-10 #choose better 
 		}
+		
+		cat("Begin fast optimization routine -- Starting values:", c(start$theta[,1],start$Param.est[2],start$Param.est[1]), "\n")
+		
 		starting.individuals<-matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
 		starting.individuals<-rbind(starting.individuals,matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE))) #OU1
 		nodes<-Nnode(phy,internal.only=FALSE)
 		Domains<-matrix(c(rep(1,nodes),rep(1,nodes),rep(0,nodes),rep(theta.max.k,nodes),rep(sigma.max.k,nodes),rep(alpha.max.k,nodes)),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE)
+		write.table(t(c("aicc","k.theta","k.sigma.sq","k.alpha")),file="logfile.txt",quote=F,sep="\t",row.name=F,col.name=F)
 		results<-genoud(fn=dredge.akaike, starting.values=starting.individuals, max=FALSE,nvars=3*nodes, data.type.int=TRUE, print.level=print.level, boundary.enforcement=2, Domains=Domains, wait.generations=wait.generations, maxeval=maxeval, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy=phy, data=data, criterion=criterion)
 	
+		cat("Finished. Begin thorough optimization routine", "\n")
+
 		edge.mat<-edge.mat(phy,results$par)
 		np<-sum(apply(edge.mat$regime.mat, 2, max))
+		K<-sum(apply(edge.mat$regime, 2, max))
+		n=Ntip(phy)
+		
 		lower = rep(lb, np)
 		upper = rep(ub, np)
 		
 		opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"=as.character(maxeval), "ftol_rel"=.Machine$double.eps^0.5)
 		out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat)
-		
-		return(out)
-	
+
+		obj = NULL
+		obj$loglik <- -out$objective
+		obj$AIC <- -2*obj$loglik+2*K
+		obj$AICc <- -2*obj$loglik + (2*K * n / (n - K - 1))
+
+		obj
 	}
 }
 
@@ -85,28 +100,33 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 	#which is an nloptr wrapper to call dev.dredge
 	#convert likelihood to AICC
 	K<-sum(apply(edge.mat.all$regime, 2, max))
-	result<-(2*lnL) + (2*K)
+	result<-(-2*lnL$loglik) + (2*K)
 	if (criterion=="aicc") {
 		n=Ntip(phy)
-		result<-2*lnL + (2*K * n / (n - K - 1))
+		result<--2*lnL$loglik + (2*K * n / (n - K - 1))
 	}
-	#return AICC
-	print(result)
+	tmp<-c(result,unlist(dredge.util(rgenoud.individual)),lnL$pars)
+	names(tmp)<-NULL
+	write.table(t(tmp),file="logfile.txt",quote=F,sep="\t",row.name=F,col.name=F,append=T)
+
 	return(result)
 }
 
 
 dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip,phy=phy) {
+	obj<-NULL
+	
 	np<-sum(apply(regime.mat, 2, max))
 	lower = rep(lb, np)
 	upper = rep(ub, np)
 	ip<-ip
-#  opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5, "xtol_rel"=.Machine$double.eps^0.5)
 	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"=as.character(maxeval), "ftol_rel"=0.01)
 	
 	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat)
 	print(out$solution)
-	return(-1*out$objective) 
+	obj$loglik<--out$objective
+	obj$pars<-out$solution
+	obj
 }
 
 
@@ -170,8 +190,7 @@ edge.mat<-function(phy,rgenoud.individual){
 	edges.ouwie[,4]=branch.lengths
 	
 	edges.ouwie=rbind(edges.ouwie,c(n,NA,Nnode(phy,internal.only=FALSE)+1,NA)) #now adding the root
-	
-	
+
 	tot<-length(rgenoud.individual)/3
 	tmp<-matrix(,tot,1)
 	#Generates all strings in the rgenoud.individual:
