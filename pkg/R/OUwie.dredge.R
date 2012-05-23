@@ -9,7 +9,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 #so each individual for rgenoud has theta1, theta2, theta3....,sigma1, sigma2, sigma3, ....,alpha1, alpha2, alpha3, where theta1 is the mapping to the theta free parameter for node 1, and so forth
 
 	#Coerce the data so that it will run in OUwie -- using values of OU1 as the starting points: 
-	cat("Fitting OU1 to obtain starting values","\n")
+	cat("Initializing...","\n")
 	
 	data2<-data.frame(as.character(data[,1]),sample(c(1:2),length(data[,1]), replace=T),data[,2],stringsAsFactors=FALSE)
 	phy$node.label<-sample(c(1:2),phy$Nnode, replace=T)
