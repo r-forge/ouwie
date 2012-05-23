@@ -27,8 +27,39 @@ dredge.util<-function(rgenoud.individual) {
 	return(list(k.theta=max(rgenoud.individual[1:(length(rgenoud.individual)/3)]),k.sigma=max(rgenoud.individual[(1+length(rgenoud.individual)/3):(2*length(rgenoud.individual)/3)]),k.alpha=max(rgenoud.individual[(1+2*length(rgenoud.individual)/3):length(rgenoud.individual)])))
 }
 
-dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,...) {
+valid.individual<-function(rgenoud.individual) {
+	#want to make sure we don't have rates 0 and 2 rather than 0 and 1
+	theta.vec<-rgenoud.individual[1:(length(rgenoud.individual)/3)]
+	sigma.vec<-rgenoud.individual[(1+length(rgenoud.individual)/3):(2*length(rgenoud.individual)/3)]
+	alpha.vec<-rgenoud.individual[(1+2*length(rgenoud.individual)/3):length(rgenoud.individual)]
+	if(length(unique(theta.vec)) != (1 + max(theta.vec) - min(theta.vec))) {
+		return(FALSE)
+	}
+	if (min(theta.vec)!=1) {
+		return(FALSE)
+	}
+	if(length(unique(sigma.vec)) != (1 + max(sigma.vec) - min(sigma.vec))) {
+		return(FALSE)
+	}
+	if (min(sigma.vec)!=1) {
+		return(FALSE)
+	}
+	if(length(unique(alpha.vec)) != (1 + max(alpha.vec) - min(alpha.vec))) {
+		return(FALSE)
+	}
+	if(min(alpha.vec)>1) {
+		return(FALSE)
+	}
+	else {
+		return(TRUE)
+	}
+}
+
+dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,badvalue=100000000,...) {
   #first check that the rgenoud.individual is well-structured: do not have just states 0 and 3 for sigma mapping, for example
+  if (!valid.individual) {
+  	return(badvalue)
+  }
   #if it fails this, reject it.
   #convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
   edge.mat.all<-edge.mat(phy,rgenoud.individual)
