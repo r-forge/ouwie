@@ -12,9 +12,9 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 	data<-data.frame(data[,2], data[,2], row.names=data[,1])
 	data<-data[phy$tip.label,]
 	bayes.individual<-matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
-	current.state<-measure.proposal(phy=phy, data=data, new.individual=bayes.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip)
-	store.state(current.state,statesfile,generation=0)
-	print.state(current.state,statesfile,generation=0)
+	current.state<-measure.proposal(phy=phy, data=data, new.individual=bayes.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval)
+	store.state(current.state,samplesfile,generation=0)
+	print.state(current.state,samplesfile,generation=0)
 
 	for(generation in sequence(ngen)) {
 		next.state<-measure.proposal(phy, data, new.individual=transform.single(current.state$new.individual), prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip)
@@ -22,10 +22,10 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 			current.state<-next.state
 		}
 		if (generation %% sample.freq == 0) {
-			store.state(current.state,statesfile,generation)
+			store.state(current.state,samplesfile,generation)
 		}
 		if (generation %% print.freq == 0) {
-			print.state(current.state,statesfile,generation)
+			print.state(current.state,samplesfile,generation)
 		}
 	}
 }
@@ -59,7 +59,7 @@ transform.single<-function(bayes.individual) {
 	valid.transform<-FALSE
 	while(!valid.transform) { #cool thing about doing this is that the hastings ratio is one: prob of going from valid to invalid is zero, as is the reverse rate
 		new.individual<-bayes.individual
-		focal.param<-sample.int(1,length(new.individual))
+		focal.param<-sample.int(length(new.individual),1)
 		new.individual[focal.param]<-new.individual[focal.param]+sign(rnorm(1))
 		valid.transform<-valid.individual(new.individual)
 	}
@@ -67,8 +67,8 @@ transform.single<-function(bayes.individual) {
 }
 
 prior.prob<-function(bayes.individual,prior.k.theta,prior.k.sigma, prior.k.alpha) {
-	k.vector<-as.vector(dredge.util(bayes.individual))
-	return(vector.index.safe(k.vector[1],prior.k.theta) * vector.index.safe(k.vector[2],prior.k.sigma) * vector.index.safe(k.vector[3],prior.k.alpha) )
+	k.list<-dredge.util(bayes.individual)
+	return(vector.index.safe.offset(k.list$k.theta,prior.k.theta) * vector.index.safe.offset(k.list$k.sigma,prior.k.sigma) * vector.index.safe.offset(k.list$k.alpha,prior.k.alpha) )
 }
 
 vector.index.safe<-function(x,vec) {
@@ -80,9 +80,20 @@ vector.index.safe<-function(x,vec) {
 	}
 }
 
+vector.index.safe.offset<-function(x,vec) {
+	x<-x+1 #deals with the indexing by zero but R indexing by 1
+	if (x>length(vec)) {
+		return(0)
+	}
+	else {
+		return(vec[x])
+	}
+}
+
 measure.proposal<-function(phy, data, new.individual, prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip) {
 	edge.mat.all<-edge.mat(phy,new.individual)
-	loglik<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)
+	loglik<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik
+	dput(loglik)
 	prior<-prior.prob(new.individual,prior.k.theta,prior.k.sigma, prior.k.alpha)
 	posterior<-loglik+log(prior)
 	return(list(new.individual=new.individual, loglik=loglik, prior=prior, posterior=posterior, unlist(dredge.util(new.individual)),nRegimes=dim(edge.mat.all$regime)[1]))

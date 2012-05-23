@@ -138,7 +138,7 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 	#convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
 	edge.mat.all<-edge.mat(phy,rgenoud.individual)
 	#call dev.optimize
-	lnL<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)
+	lnL<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik
 	#which is an nloptr wrapper to call dev.dredge
 	#convert likelihood to AICC
 	K<-sum(apply(edge.mat.all$regime, 2, max))
