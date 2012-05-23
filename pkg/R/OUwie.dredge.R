@@ -57,7 +57,7 @@ valid.individual<-function(rgenoud.individual) {
 
 dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,badvalue=100000000,...) {
   #first check that the rgenoud.individual is well-structured: do not have just states 0 and 3 for sigma mapping, for example
-  if (!valid.individual) {
+  if (!valid.individual(rgenoud.individual)) {
   	return(badvalue)
   }
   #if it fails this, reject it.
