@@ -1,4 +1,4 @@
-OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=10, pop.size=NULL,print.level=0,maxeval=500) {
+OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=10, pop.size=NULL,print.level=0,maxeval=500,logfile=NULL) {
 #criterion: If aicc or aic, use rgenoud, where the fitness is the score (and try to minimize)
 #    if rjmcmc, use an rjmcmc approach
 #alpha.max.k=3: allows for three OU regimes and one regime where alpha is set to ~0 (brownian motion)
@@ -30,8 +30,10 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		starting.individuals<-rbind(starting.individuals,matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE))) #OU1
 		nodes<-Nnode(phy,internal.only=FALSE)
 		Domains<-matrix(c(rep(1,nodes),rep(1,nodes),rep(0,nodes),rep(theta.max.k,nodes),rep(sigma.max.k,nodes),rep(alpha.max.k,nodes)),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE)
-		write.table(t(c("aicc","k.theta","k.sigma.sq","k.alpha")),file="logfile.txt",quote=F,sep="\t",row.name=F,col.name=F)
-		results<-genoud(fn=dredge.akaike, starting.values=starting.individuals, max=FALSE,nvars=3*nodes, data.type.int=TRUE, print.level=print.level, boundary.enforcement=2, Domains=Domains, wait.generations=wait.generations, maxeval=maxeval, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy=phy, data=data, criterion=criterion)
+		if(!is.null(logfile)) {
+			write.table(t(c("aicc","k.theta","k.sigma.sq","k.alpha")),file=logfile,quote=F,sep="\t",row.name=F,col.name=F)
+		}
+		results<-genoud(fn=dredge.akaike, starting.values=starting.individuals, max=FALSE,nvars=3*nodes, data.type.int=TRUE, logfile=logfile,print.level=print.level, boundary.enforcement=2, Domains=Domains, wait.generations=wait.generations, maxeval=maxeval, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy=phy, data=data, criterion=criterion)
 	
 		cat("Finished. Begin thorough optimization routine", "\n")
 
@@ -127,7 +129,7 @@ valid.individual<-function(rgenoud.individual) {
 	}
 }
 
-dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,badvalue=100000000,...) {
+dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,logfile=NULL,badvalue=100000000,...) {
 	#first check that the rgenoud.individual is well-structured: do not have just states 0 and 3 for sigma mapping, for example
 	if (!valid.individual(rgenoud.individual)) {
 		return(badvalue)
@@ -147,8 +149,9 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 	}
 	tmp<-c(result,unlist(dredge.util(rgenoud.individual)),lnL$pars)
 	names(tmp)<-NULL
-	write.table(t(tmp),file="logfile.txt",quote=F,sep="\t",row.name=F,col.name=F,append=T)
-
+	if(!is.null(logfile)) {
+		write.table(t(tmp),file=logfile,quote=F,sep="\t",row.name=F,col.name=F,append=T)
+	}
 	return(result)
 }
 
