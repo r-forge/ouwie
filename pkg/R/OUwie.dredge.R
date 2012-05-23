@@ -205,8 +205,12 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) {
 	
 	DET<-determinant(V, logarithm=TRUE)
 	
-	res<-W%*%theta-x		
-	q<-t(res)%*%solve(V,res)  #JEREMY FIX THIS
+	res<-W%*%theta-x
+	q<-NULL		
+	try(q<-t(res)%*%solve(V,res),silent=TRUE)  #JEREMY FIX THIS
+	if (is.null(q)) {
+		return(100000000000000)
+	}
 	logl <- -.5*(N*log(2*pi)+as.numeric(DET$modulus)+q[1,1])
 	return(-logl)
 }
