@@ -3,7 +3,7 @@ library(coda)
 
 
 #allow users to pass priors as vectors of the probability of 0, 1, 2, etc. up to the maximum number of, say, k.alpha
-OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alpha, ngen=10000000, sample.freq=100, print.freq=10, summary.freq=10000, root.station=TRUE, ip=1, lb=0.000001, ub=1000,maxeval=500, samplesfile="mcmc.samples.txt",likelihoodfree=FALSE) {
+OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alpha, prior.matching.theta, prior.matching.sigma, prior.matching.alpha, ngen=10000000, sample.freq=100, print.freq=10, summary.freq=10000, root.station=TRUE, ip=1, lb=0.000001, ub=1000,maxeval=500, samplesfile="mcmc.samples.txt",likelihoodfree=FALSE) {
 	data2<-data.frame(as.character(data[,1]),sample(c(1:2),length(data[,1]), replace=T),data[,2],stringsAsFactors=FALSE)
 	phy$node.label<-sample(c(1:2),phy$Nnode, replace=T)
 	start<-OUwie(phy,data2,model=c("OU1"),plot.resid=FALSE, quiet=TRUE)
@@ -43,7 +43,7 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 
 truncated.geometric.prior<-function(min=1,max=5,prob=0.5) {
 	if(min<0) {
-		stop("min in truncated.geometric.prior shoudl be non-negative")
+		stop("min in truncated.geometric.prior should be non-negative")
 	}
 	params<-c(min:max)
 	probs<-sapply(params,dgeom,prob)
@@ -55,7 +55,7 @@ truncated.geometric.prior<-function(min=1,max=5,prob=0.5) {
 
 truncated.uniform.prior<-function(min=1,max=5) {
 	if(min<0) {
-		stop("min in truncated.uniform.prior shoudl be non-negative")
+		stop("min in truncated.uniform.prior should be non-negative")
 	}
 	params<-c(min:max)
 	probs<-rep(1,max-min+1)

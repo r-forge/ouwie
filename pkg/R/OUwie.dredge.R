@@ -17,7 +17,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 	data2<-data.frame(as.character(data[,1]),sample(c(1:2),length(data[,1]), replace=T),data[,2],stringsAsFactors=FALSE)
 	phy$node.label<-sample(c(1:2),phy$Nnode, replace=T)
 	start<-OUwie(phy,data2,model=c("OU1"),plot.resid=FALSE, quiet=TRUE)
-	ip<-matrix(c(rep(start$theta[,1],Nnode(phy,internal.only=FALSE)),rep(start$Param.est[2],Nnode(phy,internal.only=FALSE)),rep(start$Param.est[1],Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
+	ip<-matrix(c(rep(start$theta[,1],Nnode(phy,internal.only=FALSE)),rep(start$Param.est[2],Nnode(phy,internal.only=FALSE)),rep(start$Param.est[1],Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #OU1
 
 	data<-data.frame(data[,2], data[,2], row.names=data[,1])
 	data<-data[phy$tip.label,]
@@ -28,11 +28,12 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		}
 		
 		cat("Begin fast optimization routine -- Starting values:", c(start$theta[,1],start$Param.est[2],start$Param.est[1]), "\n")
-		
-		starting.individuals<-matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
-		starting.individuals<-rbind(starting.individuals,matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE))) #OU1
 		nodes<-Nnode(phy,internal.only=FALSE)
-		Domains<-matrix(c(rep(1,nodes),rep(1,nodes),rep(0,nodes),rep(theta.max.k,nodes),rep(sigma.max.k,nodes),rep(alpha.max.k,nodes)),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE)
+		starting.individuals<-matrix(c(rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
+		starting.individuals[1,c(nodes,2*nodes,3*nodes)]<-c(1,1,-1)
+		starting.individuals<-rbind(starting.individuals,matrix(c(rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE))) #OU1
+		starting.individuals[2,c(nodes,2*nodes,3*nodes)]<-c(1,1,1)
+		Domains<-matrix(c(rep(0,nodes),rep(0,nodes),rep(-1,nodes),rep(theta.max.k,nodes),rep(sigma.max.k,nodes),rep(alpha.max.k,nodes)),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE)
 		if(!is.null(logfile)) {
 			write.table(t(c("aicc","k.theta","k.sigma.sq","k.alpha")),file=logfile,quote=F,sep="\t",row.name=F,col.name=F)
 		}
@@ -224,9 +225,9 @@ dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip
 dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) { 
 	nRegimes<-dim(regime.mat)[1]
 	Rate.mat.full <- matrix(0, 3, nRegimes) #first row is alpha, second row is sigma, third is theta. Value of zero initially
-	k.theta<-max(regime.mat[,1])
-	k.sigma<-max(regime.mat[,2])
 	k.alpha<-max(regime.mat[,3])
+	k.sigma<-max(regime.mat[,2])
+	k.theta<-max(regime.mat[,1])
 	p.index<-1
 	for(k in sequence(k.theta)) {
 		Rate.mat.full[1,which(regime.mat[,1]==k)]<-p[p.index]
@@ -257,11 +258,39 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) {
 	return(as.numeric(neglogl)) #now neg log L.
 }
 
+#this creates a vector. The third element in this vector corresponds to the number appearing in the 
+#   second column (descendant) of the edge matrix in the phy object for that edge. 
+#   So if you want to know the ancestor of the i-th element in the rgenoud.individual,
+#   the focal node number is phy$edge[(get.mapping(phy,rgenoud.individual))[i],2]
+#   and the parent node number is phy$edge[(get.mapping(phy,rgenoud.individual))[i],1]
+#   the state of the parent node in the rgenoud.individual is then
+#   rgenoud.individual[ which(get.mapping(phy,rgenoud.individual) == phy$edge[(get.mapping(phy,rgenoud.individual))[i],1]) ]
+get.mapping<-function(rgenoud.individual,phy) {
+	return(match(phy$edge[,2],1:length(rgenoud.individual))) 
+}
+
+get.final.label<-function(i,rgenoud.individual,phy) {
+	if (rgenoud.individual[i]!=0) {
+		return(rgenoud.individual[i])
+	}
+	rgenoud.index<-i
+	while(rgenoud.individual[rgenoud.index]==0) {
+		rgenoud.index <- rgenoud.individual[ which(get.mapping(rgenoud.individual,phy) == phy$edge[(get.mapping(rgenoud.individual,phy))[rgenoud.index],1]) ]
+	}
+	return(rgenoud.individual[rgenoud.index])
+}
+
+as.full.regime<-function(rgenoud.individual,phy) {
+	return(sapply(sequence(length(rgenoud.individual)),get.final.label,rgenoud.individual=rgenoud.individual,phy=phy))
+}
+
 #Steps:
 #Create possible regimes from rgenoud.individual -- done
 #Write tree traversal to obtain possible regimes for each edge -- scores each in edge.mat
 #Output is edges.ouwie
-edge.mat<-function(phy,rgenoud.individual){
+edge.mat<-function(phy,rgenoud.individual){ #requires full mapping: no 0 values to match to parent node
+	
+	rgenoud.individual<-as.full.regime(rgenoud.individual)
 	obj=NULL
 	#Values to be used throughout
 	n=max(phy$edge[,1])
