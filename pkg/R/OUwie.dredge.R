@@ -214,7 +214,7 @@ dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip
 	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"=as.character(maxeval), "ftol_rel"=0.01)
 	
 	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat)
-	obj$loglik<--out$objective
+	obj$loglik<--out$objective #this is actually neg logL
 	obj$pars<-out$solution
 	obj
 }
@@ -252,7 +252,7 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) {
 	
 	DET<-determinant(V, logarithm=TRUE)
 
-	logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
+	logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi)) #logL, not neg logL
 	
 	return(as.numeric(-logl))
 }

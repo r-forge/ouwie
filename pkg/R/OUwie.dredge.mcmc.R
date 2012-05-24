@@ -3,7 +3,7 @@
 
 
 #allow users to pass priors as vectors of the probability of 0, 1, 2, etc. up to the maximum number of, say, k.alpha
-OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alpha, ngen=10000000, sample.freq=100, print.freq=10, root.station=TRUE, ip=1, lb=0.000001, ub=1000,maxeval=500, samplesfile="mcmc.samples.txt") {
+OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alpha, ngen=10000000, sample.freq=100, print.freq=10, root.station=TRUE, ip=1, lb=0.000001, ub=1000,maxeval=500, samplesfile="mcmc.samples.txt",likelihoodfree=FALSE) {
 	data2<-data.frame(as.character(data[,1]),sample(c(1:2),length(data[,1]), replace=T),data[,2],stringsAsFactors=FALSE)
 	phy$node.label<-sample(c(1:2),phy$Nnode, replace=T)
 	start<-OUwie(phy,data2,model=c("OU1"),plot.resid=FALSE, quiet=TRUE)
@@ -12,7 +12,7 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 	data<-data.frame(data[,2], data[,2], row.names=data[,1])
 	data<-data[phy$tip.label,]
 	bayes.individual<-matrix(c(rep(1,Nnode(phy,internal.only=FALSE)),rep(1,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
-	current.state<-measure.proposal(phy=phy, data=data, new.individual=bayes.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval)
+	current.state<-measure.proposal(phy=phy, data=data, new.individual=bayes.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval,likelihoodfree=likelihoodfree)
 	store.state(current.state,samplesfile,generation=0)
 	labels<-c("generation","posterior","loglik", "prior", "k.theta", "k.sigma", "k.alpha", "nRegimes")
 	cat(labels)
@@ -20,8 +20,11 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 	print.state(current.state,samplesfile,generation=0)
 
 	for(generation in sequence(ngen)) {
-		next.state<-measure.proposal(phy, data, new.individual=transform.single(current.state$new.individual), prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip)
-		if ((current.state$posterior - next.state$posterior) > runif(1,0,1)) {
+		next.state<-measure.proposal(phy=phy, data=data, new.individual=transform.single(current.state$new.individual), prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval,likelihoodfree=likelihoodfree)
+		cat("\nproposed posterior and like and prior: ",next.state$posterior,next.state$loglik,next.state$prior)
+		cat("\nprevious posterior and like and prior: ",current.state$posterior,current.state$loglik,current.state$prior)
+		cat("\nposterior diff exp(prev - proposed): ",exp(current.state$posterior - next.state$posterior))
+		if (is.finite(next.state$posterior) && (exp(current.state$posterior - next.state$posterior) < (runif(1,0,1)))) {
 			current.state<-next.state
 		}
 		if (generation %% sample.freq == 0) {
@@ -66,7 +69,21 @@ transform.single<-function(bayes.individual) {
 		new.individual[focal.param]<-new.individual[focal.param]+sign(rnorm(1))
 		valid.transform<-valid.individual(new.individual)
 	}
+	cat("\nmismatch position: ",which(bayes.individual!=new.individual))
 	return(new.individual)
+}
+
+transform.clade<-function(bayes.individual) {
+	valid.transform<-FALSE
+	while(!valid.transform) { #cool thing about doing this is that the hastings ratio is one: prob of going from valid to invalid is zero, as is the reverse rate
+		new.individual<-bayes.individual
+		
+		#do things here
+		
+		
+		valid.transform<-valid.individual(new.individual)
+	}
+	return(new.individual)	
 }
 
 prior.prob<-function(bayes.individual,prior.k.theta,prior.k.sigma, prior.k.alpha) {
@@ -93,11 +110,15 @@ vector.index.safe.offset<-function(x,vec) {
 	}
 }
 
-measure.proposal<-function(phy, data, new.individual, prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip) {
+measure.proposal<-function(phy, data, new.individual, prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip,likelihoodfree=FALSE) {
 	edge.mat.all<-edge.mat(phy,new.individual)
-	loglik<-(-1)*dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik
+	loglik=0.5
+	if(!likelihoodfree) {
+		loglik<-(-1)*dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik #dev.optimize()$loglik is actually neg log lik. So make it normal log lik
+	}
 	prior<-prior.prob(new.individual,prior.k.theta,prior.k.sigma, prior.k.alpha)
 	posterior<-loglik+log(prior)
+	cat("\nloglik",loglik,"prior",prior,"log(prior)",log(prior),"posterior",posterior)
 	k.list<-dredge.util(new.individual)
 	return(list(new.individual=new.individual, loglik=loglik, prior=prior, posterior=posterior, k.theta=k.list$k.theta, k.sigma=k.list$k.sigma, k.alpha=k.list$k.alpha,nRegimes=dim(edge.mat.all$regime)[1]))
 }
