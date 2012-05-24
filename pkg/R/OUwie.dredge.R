@@ -105,10 +105,11 @@ plot.ouwie.dredge.result <- function(x, type=c("regime", "rate"), col.pal=c("Set
 		if(regime.lvls<3){
 			regime.lvls = 3
 		}
-		#Chooses color schemes:
+		#
 		if(length(col.pal>1)){
 			co<-brewer.pal(regime.lvls, col.pal)
 		}
+		#If not the 
 		else{
 			co<-col.pal
 		}
@@ -185,16 +186,16 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 	#convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
 	edge.mat.all<-edge.mat(phy,rgenoud.individual)
 	#call dev.optimize
-	lnL<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik
+	fit<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)
 	#which is an nloptr wrapper to call dev.dredge
 	#convert likelihood to AICC
 	K<-sum(apply(edge.mat.all$regime, 2, max))
-	result<-(-2*lnL$loglik) + (2*K)
+	result<-(-2*fit$loglik) + (2*K)
 	if (criterion=="aicc") {
 		n=Ntip(phy)
-		result<--2*lnL$loglik + (2*K * n / (n - K - 1))
+		result<--2*fit$loglik + (2*K * n / (n - K - 1))
 	}
-	tmp<-c(result,unlist(dredge.util(rgenoud.individual)),lnL$pars)
+	tmp<-c(result,unlist(dredge.util(rgenoud.individual)),fit$pars)
 	names(tmp)<-NULL
 	if(!is.null(logfile)) {
 		write.table(t(tmp),file=logfile,quote=F,sep="\t",row.name=F,col.name=F,append=T)
@@ -213,7 +214,6 @@ dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip
 	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"=as.character(maxeval), "ftol_rel"=0.01)
 	
 	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat)
-	#print(out$solution)
 	obj$loglik<--out$objective
 	obj$pars<-out$solution
 	obj
@@ -251,15 +251,10 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) {
 	theta<-Rate.mat.full[3,]
 	
 	DET<-determinant(V, logarithm=TRUE)
+
+	logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
 	
-	res<-W%*%theta-x
-	q<-NULL		
-	try(q<-t(res)%*%solve(V,res),silent=TRUE)  #JEREMY FIX THIS
-	if (is.null(q)) {
-		return(100000000000000)
-	}
-	logl <- -.5*(N*log(2*pi)+as.numeric(DET$modulus)+q[1,1])
-	return(-logl)
+	return(as.numeric(-logl))
 }
 
 #Steps:
