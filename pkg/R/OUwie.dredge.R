@@ -50,8 +50,8 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		
 		opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"=as.character(maxeval), "ftol_rel"=.Machine$double.eps^0.5)
 		out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat)
-
-		obj = list(loglik = -out$objective, AIC = -2*out$objective+2*K,AICc=-2*out$objective + (2*K * n / (n - K - 1)),solution=out$solution, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat,start=start,rgenoud.individual=results$par)
+		loglik = (-1) * out$objective #since dev.dredge() returns negloglik
+		obj = list(loglik = loglik, AIC = -2*loglik+2*K,AICc=-2*loglik + (2*K * n / (n - K - 1)),solution=out$solution, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat,start=start,rgenoud.individual=results$par) 
 		class(obj)<-"ouwie.dredge.result"		
 
 		return(obj)
@@ -186,14 +186,14 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 	#convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
 	edge.mat.all<-edge.mat(phy,rgenoud.individual)
 	#call dev.optimize
-	fit<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)
+	fit<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy) 
 	#which is an nloptr wrapper to call dev.dredge
 	#convert likelihood to AICC
 	K<-sum(apply(edge.mat.all$regime, 2, max))
 	result<-(-2*fit$loglik) + (2*K)
 	if (criterion=="aicc") {
 		n=Ntip(phy)
-		result<--2*fit$loglik + (2*K * n / (n - K - 1))
+		result<-(-2)*fit$loglik + (2*K * n / (n - K - 1))
 	}
 	tmp<-c(result,unlist(dredge.util(rgenoud.individual)),fit$pars)
 	names(tmp)<-NULL
@@ -213,8 +213,8 @@ dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip
 	ip<-ip
 	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"=as.character(maxeval), "ftol_rel"=0.01)
 	
-	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat)
-	obj$loglik<--out$objective #this is actually neg logL
+	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat) 
+	obj$loglik<-(-1)*out$objective 
 	obj$pars<-out$solution
 	obj
 }
@@ -253,8 +253,8 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) {
 	DET<-determinant(V, logarithm=TRUE)
 
 	logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi)) #logL, not neg logL
-	
-	return(as.numeric(-logl))
+	neglogl<-(-1)*logl
+	return(as.numeric(neglogl)) #now neg log L.
 }
 
 #Steps:
