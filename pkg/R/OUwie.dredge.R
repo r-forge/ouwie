@@ -38,7 +38,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 			write.table(t(c("aicc","k.theta","k.sigma.sq","k.alpha")),file=logfile,quote=F,sep="\t",row.name=F,col.name=F)
 		}
 		results<-genoud(fn=dredge.akaike, starting.values=starting.individuals, max=FALSE,nvars=3*nodes, data.type.int=TRUE, logfile=logfile,print.level=print.level, boundary.enforcement=2, Domains=Domains, wait.generations=wait.generations, maxeval=maxeval, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy=phy, data=data, criterion=criterion)
-	
+		print(results$par)
 		cat("Finished. Begin thorough optimization routine", "\n")
 
 		edge.mat<-edge.mat(phy,results$par)
@@ -60,9 +60,9 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 }
 
 print.ouwie.dredge.result <- function(x, ...) {
-	K<-sum(unlist(dredge.util(x$rgenoud.individual)))
+	K<-sum(unlist(dredge.util(x$rgenoud.individual,x$phy)))
 	n<-Ntip(x$phy)
-	output<-c(x$loglik,x$AIC,x$AICc,n,dim(x$regime.mat)[1],K,c(unlist(dredge.util(x$rgenoud.individual))))
+	output<-c(x$loglik,x$AIC,x$AICc,n,dim(x$regime.mat)[1],K,c(unlist(dredge.util(x$rgenoud.individual,x$phy))))
 	names(output)<-c("negLnL","AIC","AICc","ntax","n_regimes","K_all","K_theta","K_sigma","K_alpha")
 	print(output)
 	
@@ -73,15 +73,15 @@ print.ouwie.dredge.result <- function(x, ...) {
 	
 	regime.mat.params<-x$regime.mat*0
 	p.index<-1
-	for(k in sequence(dredge.util(x$rgenoud.individual)[[1]])) {
+	for(k in sequence(dredge.util(x$rgenoud.individual,x$phy)[[1]])) {
 		regime.mat.params[which(x$regime.mat[,1]==k),1]<-x$solution[p.index]
 		p.index<-p.index+1
 	}
-	for(k in sequence(dredge.util(x$rgenoud.individual)[[2]])) {
+	for(k in sequence(dredge.util(x$rgenoud.individual,x$phy)[[2]])) {
 		regime.mat.params[which(x$regime.mat[,2]==k),2]<-x$solution[p.index]
 		p.index<-p.index+1
 	}
-	for(k in sequence(dredge.util(x$rgenoud.individual)[[3]])) {
+	for(k in sequence(dredge.util(x$rgenoud.individual,x$phy)[[3]])) {
 		regime.mat.params[which(x$regime.mat[,3]==k),3]<-x$solution[p.index]
 		p.index<-p.index+1
 	}
@@ -95,7 +95,7 @@ print.ouwie.dredge.result <- function(x, ...) {
 ##   gradient of color      ##
 
 plot.ouwie.dredge.result <- function(x, type=c("regime", "rate"), col.pal=c("Set1"), ...) {
-	
+	x$rgenoud.individual<-as.full.regime(x$rgenoud.individual,x$phy)
 	par(mfcol=c(1,3))
 	tot<-length(x$rgenoud.individual)/3
 		
@@ -143,7 +143,8 @@ plot.ouwie.dredge.result <- function(x, type=c("regime", "rate"), col.pal=c("Set
 	}
 }
 
-dredge.util<-function(rgenoud.individual) {
+dredge.util<-function(rgenoud.individual,phy) {
+	rgenoud.individual<-as.full.regime(rgenoud.individual,phy)
 	return(list(k.theta=max(rgenoud.individual[1:(length(rgenoud.individual)/3)]),k.sigma=max(rgenoud.individual[(1+length(rgenoud.individual)/3):(2*length(rgenoud.individual)/3)]),k.alpha=max(rgenoud.individual[(1+2*length(rgenoud.individual)/3):length(rgenoud.individual)])))
 }
 
@@ -196,7 +197,7 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 		n=Ntip(phy)
 		result<-(-2)*fit$loglik + (2*K * n / (n - K - 1))
 	}
-	tmp<-c(result,unlist(dredge.util(rgenoud.individual)),fit$pars)
+	tmp<-c(result,unlist(dredge.util(rgenoud.individual,phy)),fit$pars)
 	names(tmp)<-NULL
 	if(!is.null(logfile)) {
 		write.table(t(tmp),file=logfile,quote=F,sep="\t",row.name=F,col.name=F,append=T)
@@ -269,23 +270,29 @@ get.mapping<-function(rgenoud.individual,phy) {
 	return(match(phy$edge[,2],1:length(rgenoud.individual))) 
 }
 
+
 get.final.label<-function(i,rgenoud.individual,phy) {
 	if (rgenoud.individual[i]!=0) {
 		return(rgenoud.individual[i])
 	}
-	rgenoud.index<-i
-	while(rgenoud.individual[rgenoud.index]==0) {
-		parent.node<-phy$edge[(get.mapping(rgenoud.individual,phy))[rgenoud.index],1]
-		if (is.na(parent.node) ) { #we've gone to the root, which is set to have -1. So let's make it have state 1
-			return(1)
+	nodeCount <- Nnode(phy,internal.only=FALSE)
+	mapping <- get.mapping(rgenoud.individual,phy)
+	while (rgenoud.individual[i] == 0 ) {
+		indexMapping <- i %% nodeCount
+		current.node <- mapping[ indexMapping ]
+		parent.node <- phy$edge[ which(phy$edge[,2] == current.node), 1]
+		i <- which( mapping == parent.node )
+		if (length(i) ==0 ) {
+			return ( 1) #can't find the parent node because we ARE at the root, which has been assigned a -1
 		}
-		rgenoud.index <- rgenoud.individual[ which(get.mapping(rgenoud.individual,phy) == parent.node) ]
 	}
-	return(rgenoud.individual[rgenoud.index])
+	return( rgenoud.individual[i] )
 }
 
+
+
 as.full.regime<-function(rgenoud.individual,phy) {
-	return(sapply(sequence(length(rgenoud.individual)),get.final.label,rgenoud.individual=rgenoud.individual,phy=phy))
+	return(sapply(X=sequence(length(rgenoud.individual)),FUN=get.final.label,rgenoud.individual=rgenoud.individual,phy=phy))
 }
 
 #Steps:
@@ -294,7 +301,7 @@ as.full.regime<-function(rgenoud.individual,phy) {
 #Output is edges.ouwie
 edge.mat<-function(phy,rgenoud.individual){ #requires full mapping: no 0 values to match to parent node
 	
-	rgenoud.individual<-as.full.regime(rgenoud.individual)
+	rgenoud.individual<-as.full.regime(rgenoud.individual,phy)
 	obj=NULL
 	#Values to be used throughout
 	n=max(phy$edge[,1])

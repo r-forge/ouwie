@@ -92,6 +92,8 @@ transform.clade<-function(bayes.individual) {
 	return(new.individual)	
 }
 
+
+#TO DO: DREDGE UTIL NEEDS PHY
 prior.prob<-function(bayes.individual,prior.k.theta,prior.k.sigma, prior.k.alpha) {
 	k.list<-dredge.util(bayes.individual)
 	return(vector.index.safe.offset(k.list$k.theta,prior.k.theta) * vector.index.safe.offset(k.list$k.sigma,prior.k.sigma) * vector.index.safe.offset(k.list$k.alpha,prior.k.alpha) )
