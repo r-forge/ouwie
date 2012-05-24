@@ -275,7 +275,11 @@ get.final.label<-function(i,rgenoud.individual,phy) {
 	}
 	rgenoud.index<-i
 	while(rgenoud.individual[rgenoud.index]==0) {
-		rgenoud.index <- rgenoud.individual[ which(get.mapping(rgenoud.individual,phy) == phy$edge[(get.mapping(rgenoud.individual,phy))[rgenoud.index],1]) ]
+		parent.node<-phy$edge[(get.mapping(rgenoud.individual,phy))[rgenoud.index],1]
+		if (is.na(parent.node) ) { #we've gone to the root, which is set to have -1. So let's make it have state 1
+			return(1)
+		}
+		rgenoud.index <- rgenoud.individual[ which(get.mapping(rgenoud.individual,phy) == parent.node) ]
 	}
 	return(rgenoud.individual[rgenoud.index])
 }
