@@ -124,6 +124,9 @@ valid.individual<-function(rgenoud.individual) {
 	if(min(alpha.vec)>1) {
 		return(FALSE)
 	}
+	if(min(alpha.vec)<0) {
+		return(FALSE)
+	}
 	else {
 		return(TRUE)
 	}

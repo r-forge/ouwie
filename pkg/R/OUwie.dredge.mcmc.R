@@ -21,7 +21,7 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 
 	for(generation in sequence(ngen)) {
 		next.state<-measure.proposal(phy, data, new.individual=transform.single(current.state$new.individual), prior.k.theta,prior.k.sigma, prior.k.alpha, maxeval, root.station, lb, ub, ip)
-		if ((next.state$posterior - current.state$posterior) > runif(1,0,1)) {
+		if ((current.state$posterior - next.state$posterior) > runif(1,0,1)) {
 			current.state<-next.state
 		}
 		if (generation %% sample.freq == 0) {
