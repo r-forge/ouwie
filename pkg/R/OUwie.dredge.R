@@ -1,4 +1,7 @@
-OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=10, pop.size=NULL,print.level=0,maxeval=500,logfile=NULL) {
+library(rgenoud)
+library(RColorBrewer)
+
+OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=10, pop.size=NULL, print.level=0, maxeval=500, logfile=NULL) {
 #criterion: If aicc or aic, use rgenoud, where the fitness is the score (and try to minimize)
 #    if rjmcmc, use an rjmcmc approach
 #alpha.max.k=3: allows for three OU regimes and one regime where alpha is set to ~0 (brownian motion)
@@ -87,14 +90,55 @@ print.ouwie.dredge.result <- function(x, ...) {
 	
 }
 
-plot.ouwie.dredge.result <- function(x, ...) {
+##   Regime vs. Rate        ##
+##   gradient of color      ##
+
+plot.ouwie.dredge.result <- function(x, type=c("regime", "rate"), col.pal=c("Set1"), ...) {
+	
 	par(mfcol=c(1,3))
-	plot(x$phy,...)
-	title(main="theta")
-	plot(x$phy,...)
-	title(main="sigma")
-	plot(x$phy,...)
-	title(main="alpha")
+	tot<-length(x$rgenoud.individual)/3
+		
+	if(type=="regime"){
+		
+		regimes<-as.factor(x$rgenoud.individual)
+		regime.lvls<-length(levels(regimes))
+		if(regime.lvls<3){
+			regime.lvls = 3
+		}
+		#Chooses color schemes:
+		if(length(col.pal>1)){
+			co<-brewer.pal(regime.lvls, col.pal)
+		}
+		else{
+			co<-col.pal
+		}
+		##Plot thetas
+		nb.tip <- Ntip(x$phy)
+		nb.node <- Nnode(x$phy)
+		comp <- numeric(Nedge(x$phy))
+		comp[match(1:(Ntip(x$phy)), x$phy$edge[,2])] <- as.factor(regimes[1:nb.tip])
+		comp[match((2+Ntip(x$phy)):(Nedge(x$phy)+1), x$phy$edge[,2])] <- as.factor(regimes[(nb.tip+1):(nb.tip+nb.node)][-1])
+		plot.phylo(x$phy,edge.color=co[comp], ...)
+		title(main="theta")
+		
+		##Plot sigmas
+		nb.tip <- Ntip(x$phy)
+		nb.node <- Nnode(x$phy)
+		comp <- numeric(Nedge(x$phy))
+		comp[match(1:(Ntip(x$phy)), x$phy$edge[,2])] <- as.factor(regimes[(tot+1):(tot+nb.tip)])
+		comp[match((2+Ntip(x$phy)):(Nedge(x$phy)+1), x$phy$edge[,2])] <- as.factor(regimes[(2*tot+1):(2*(tot))][-1])
+		plot.phylo(x$phy,edge.color=co[comp], ...)
+		title(main="sigma")
+		
+		##Plot alphas
+		nb.tip <- Ntip(x$phy)
+		nb.node <- Nnode(x$phy)
+		comp <- numeric(Nedge(x$phy))
+		comp[match(1:(Ntip(x$phy)), x$phy$edge[,2])] <- as.factor(regimes[(2*tot+1):(2*tot+nb.tip)])
+		comp[match((2+Ntip(x$phy)):(Nedge(x$phy)+1), x$phy$edge[,2])] <- as.factor(regimes[(3*tot+1):length(x$rgenoud.individual)][-1])
+		plot.phylo(x$phy,edge.color=co[comp], ...)	
+		title(main="alpha")
+	}
 }
 
 dredge.util<-function(rgenoud.individual) {
