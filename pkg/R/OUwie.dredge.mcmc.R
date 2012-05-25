@@ -132,6 +132,7 @@ vector.index.safe.offset<-function(x,vec) {
 	}
 }
 
+
 measure.proposal<-function(phy, data, new.individual, prior.k.theta,prior.k.sigma, prior.k.alpha, prior.nonmatching.theta, prior.nonmatching.sigma, prior.nonmatching.alpha, maxeval, root.station, lb, ub, ip,likelihoodfree=FALSE,proposal.ratio) {
 	edge.mat.all<-edge.mat(phy,new.individual)
 	loglik=0.5
