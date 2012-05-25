@@ -33,12 +33,11 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		starting.individuals[1,c(nodes,2*nodes,3*nodes)]<-c(1,1,-1)
 		starting.individuals<-rbind(starting.individuals,matrix(c(rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE))) #OU1
 		starting.individuals[2,c(nodes,2*nodes,3*nodes)]<-c(1,1,1)
-		Domains<-matrix(c(rep(0,nodes),rep(0,nodes),rep(-1,nodes),rep(theta.max.k,nodes),rep(sigma.max.k,nodes),rep(alpha.max.k,nodes)),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE)
+		Domains<-matrix(c(rep(0,nodes-1),1,rep(0,nodes-1),1,rep(-1,nodes),rep(theta.max.k,nodes),rep(sigma.max.k,nodes),rep(alpha.max.k,nodes)),ncol=2,nrow=3*Nnode(phy,internal.only=FALSE),byrow=FALSE)
 		if(!is.null(logfile)) {
 			write.table(t(c("aicc","k.theta","k.sigma.sq","k.alpha")),file=logfile,quote=F,sep="\t",row.name=F,col.name=F)
 		}
 		results<-genoud(fn=dredge.akaike, starting.values=starting.individuals, max=FALSE,nvars=3*nodes, data.type.int=TRUE, logfile=logfile,print.level=print.level, boundary.enforcement=2, Domains=Domains, wait.generations=wait.generations, maxeval=maxeval, max.generations=max.generations, pop.size=pop.size, root.station=TRUE, ip=ip, lb=lb, ub=ub, phy=phy, data=data, criterion=criterion)
-		print(results$par)
 		cat("Finished. Begin thorough optimization routine", "\n")
 
 		edge.mat<-edge.mat(phy,results$par)
@@ -148,11 +147,14 @@ dredge.util<-function(rgenoud.individual,phy) {
 	return(list(k.theta=max(rgenoud.individual[1:(length(rgenoud.individual)/3)]),k.sigma=max(rgenoud.individual[(1+length(rgenoud.individual)/3):(2*length(rgenoud.individual)/3)]),k.alpha=max(rgenoud.individual[(1+2*length(rgenoud.individual)/3):length(rgenoud.individual)])))
 }
 
-valid.individual<-function(rgenoud.individual) {
+valid.individual<-function(rgenoud.individual,phy) {
+	rgenoud.individual<-as.full.regime(rgenoud.individual,phy)
 	#want to make sure we do not have rates 0 and 2 rather than 0 and 1
 	theta.vec<-rgenoud.individual[1:(length(rgenoud.individual)/3)]
 	sigma.vec<-rgenoud.individual[(1+length(rgenoud.individual)/3):(2*length(rgenoud.individual)/3)]
 	alpha.vec<-rgenoud.individual[(1+2*length(rgenoud.individual)/3):length(rgenoud.individual)]
+	alpha.vec[which(alpha.vec==(-1))]<-0
+
 	if(length(unique(theta.vec)) != (1 + max(theta.vec) - min(theta.vec))) {
 		return(FALSE)
 	}
@@ -181,7 +183,7 @@ valid.individual<-function(rgenoud.individual) {
 
 dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip,root.station,maxeval,logfile=NULL,badvalue=100000000,...) {
 	#first check that the rgenoud.individual is well-structured: do not have just states 0 and 3 for sigma mapping, for example
-	if (!valid.individual(rgenoud.individual)) {
+	if (!valid.individual(rgenoud.individual,phy)) {
 		return(badvalue)
 	}
 	#if it fails this, reject it.
@@ -300,7 +302,6 @@ as.full.regime<-function(rgenoud.individual,phy) {
 #Write tree traversal to obtain possible regimes for each edge -- scores each in edge.mat
 #Output is edges.ouwie
 edge.mat<-function(phy,rgenoud.individual){ #requires full mapping: no 0 values to match to parent node
-	
 	rgenoud.individual<-as.full.regime(rgenoud.individual,phy)
 	obj=NULL
 	#Values to be used throughout
