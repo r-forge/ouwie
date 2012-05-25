@@ -1,7 +1,7 @@
 library(rgenoud)
 library(RColorBrewer)
 
-OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=10, pop.size=NULL, print.level=0, maxeval=500, logfile=NULL) {
+OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k=3, sigma.max.k=3, alpha.max.k=3, root.station=TRUE, ip=1, lb=0.000001, ub=1000, max.generations=100, wait.generations=50, pop.size=NULL, print.level=0, maxeval=500, logfile=NULL) {
 #criterion: If aicc or aic, use rgenoud, where the fitness is the score (and try to minimize)
 #    if rjmcmc, use an rjmcmc approach
 #alpha.max.k=3: allows for three OU regimes and one regime where alpha is set to ~0 (brownian motion)
@@ -24,7 +24,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 	
 	if(criterion!="rjmcmc") {
 		if (is.null(pop.size)) {
-			pop.size<-10 #choose better 
+			pop.size<-500 #choose better 
 		}
 		
 		cat("Begin fast optimization routine -- Starting values:", c(start$theta[,1],start$Param.est[2],start$Param.est[1]), "\n")
@@ -93,8 +93,8 @@ print.ouwie.dredge.result <- function(x, ...) {
 ##   Regime vs. Rate        ##
 ##   gradient of color      ##
 
-plot.ouwie.dredge.result <- function(x, type=c("regime", "rate"), col.pal=c("Set1"), ...) {
-	x$rgenoud.individual<-as.full.regime(x$rgenoud.individual,x$phy)
+plot.ouwie.dredge.result <- function(x, type="regime", col.pal=c("Set1"), ...) {
+#	x$rgenoud.individual<-as.full.regime(x$rgenoud.individual,x$phy)
 	par(mfcol=c(1,3))
 	tot<-length(x$rgenoud.individual)/3
 		
@@ -146,36 +146,35 @@ get.trees<-function(x){
 	
 	obj<-NULL
 	
-	tot<-length(x$rgenoud.individual)/3
-	maps<-get.mapping(x$rgenoud.individual,x$phy)
-	
-##Get theta tree
 	x$rgenoud.individual[x$rgenoud.individual==(-1)]=0
-	ordered.maps<-x$rgenoud.individual[1:(tot-1)]
-	n.labels<-numeric(Nnode(x$phy))
-	n.labels[1]<-x$rgenoud.individual[tot]
-	n.labels[2:Nnode(x$phy)]<-ordered.maps[maps>Ntip(x$phy)]		
+	tot<-length(x$rgenoud.individual)/3
+	nb.tip <- Ntip(x$phy)
+	nb.node <- Nnode(x$phy)
+
+	##Gets node labels for theta
+	theta.regimes<-x$rgenoud.individual[1:tot]
+	n.labels <- numeric(Nnode(x$phy))
+	n.labels[1]<-theta.regimes[tot]
+	n.labels[2:Nnode(x$phy)]<-theta.regimes[match((2+Ntip(x$phy)):(Nedge(x$phy)+1),x$phy$edge[,2])] 
 	x$phy$node.label<-n.labels
 	obj$theta<-x$phy
-	
-##Get sigma tree
-	x$rgenoud.individual[x$rgenoud.individual==(-1)]=0
-	order.maps<-x$rgenoud.individual[(tot+1):(2*(tot)-1)]
+
+	##Gets node labels for sigma
+	sigma.regimes<-x$rgenoud.individual[(tot+1):(2*tot)]
 	n.labels<-numeric(Nnode(x$phy))
-	n.labels[1]<-x$rgenoud.individual[2*tot]
-	n.labels[2:Nnode(x$phy)]<-order.maps[maps>Ntip(x$phy)]		
+	n.labels[1]<-sigma.regimes[tot]
+	n.labels[2:Nnode(x$phy)]<-sigma.regimes[match((2+Ntip(x$phy)):(Nedge(x$phy)+1),x$phy$edge[,2])] 	
 	x$phy$node.label<-n.labels
 	obj$sigma<-x$phy
 	
-##Get alpha tree
-	x$rgenoud.individual[x$rgenoud.individual==(-1)]=0
-	order.maps<-x$rgenoud.individual[(2*tot+1):(length(x$rgenoud.individual)-1)]
+	##Gets node labels for alpha
+	alpha.regimes<-x$rgenoud.individual[(2*tot+1):length(x$rgenoud.individual)]
 	n.labels<-numeric(Nnode(x$phy))
-	n.labels[1]<-x$rgenoud.individual[3*tot]
-	n.labels[2:Nnode(x$phy)]<-order.maps[maps>Ntip(x$phy)]		
+	n.labels[1]<-alpha.regimes[tot]
+	n.labels[2:Nnode(x$phy)]<-alpha.regimes[match((2+Ntip(x$phy)):(Nedge(x$phy)+1),x$phy$edge[,2])] 	
 	x$phy$node.label<-n.labels
 	obj$alpha<-x$phy
-	
+
 	obj
 }
 
@@ -357,7 +356,7 @@ edge.mat<-function(phy,rgenoud.individual){ #requires full mapping: no 0 values 
 	branch.lengths[(ntips+1):(n-1)]=branching.times(phy)[-1]/max(branching.times(phy))
 	
 	#New tree matrix to be used for subsetting regimes
-	edges.ouwie=cbind(c(1:(n-1)),phy$edge,phy$edge.length)
+	edges.ouwie=cbind(c(1:(n-1)),pp$phy$edge,pp$phy$edge.length)
 	edges.ouwie=edges.ouwie[sort.list(edges.ouwie[,3]),]
 	
 	edges.ouwie[,4]=branch.lengths
