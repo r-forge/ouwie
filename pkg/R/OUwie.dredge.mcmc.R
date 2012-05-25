@@ -15,7 +15,7 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 	data<-data[phy$tip.label,]
 	bayes.individual<-c(rep(0,nodes),rep(0,nodes),rep(0,nodes)) #BM1
 	bayes.individual[c(nodes,2*nodes,3*nodes)]<-c(1,1,-1)
-	current.state<-measure.proposal(phy=phy, data=data, new.individual=bayes.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, prior.nonmatching.theta=prior.nonmatching.theta, prior.nonmatching.sigma=prior.nonmatching.sigma, prior.nonmatching.alpha=prior.nonmatching.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval,likelihoodfree=likelihoodfree)
+	current.state<-measure.proposal(phy=phy, data=data, new.individual=bayes.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, prior.nonmatching.theta=prior.nonmatching.theta, prior.nonmatching.sigma=prior.nonmatching.sigma, prior.nonmatching.alpha=prior.nonmatching.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval,likelihoodfree=likelihoodfree,proposal.ratio=1)
 	store.state(current.state,samplesfile,generation=0)
 	cat("\nNote that this is loglik, not negative loglik. Higher is better (true for posterior, too)\n")
 	labels<-c("generation","posterior","loglik", "prior", "k.theta", "k.sigma", "k.alpha", "nRegimes")
@@ -24,7 +24,8 @@ OUwie.dredge.mcmc<-function(phy,data, prior.k.theta, prior.k.sigma, prior.k.alph
 	print.state(current.state,samplesfile,generation=0)
 
 	for(generation in sequence(ngen)) {
-		next.state<-measure.proposal(phy=phy, data=data, new.individual=transform.single(current.state$new.individual,phy), prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, prior.nonmatching.theta=prior.nonmatching.theta, prior.nonmatching.sigma=prior.nonmatching.sigma, prior.nonmatching.alpha=prior.nonmatching.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval,likelihoodfree=likelihoodfree)
+		new.transform=transform.single(current.state$new.individual,phy)		
+		next.state<-measure.proposal(phy=phy, data=data, new.individual=new.transform$new.individual, prior.k.theta=prior.k.theta, prior.k.sigma=prior.k.sigma, prior.k.alpha=prior.k.alpha, prior.nonmatching.theta=prior.nonmatching.theta, prior.nonmatching.sigma=prior.nonmatching.sigma, prior.nonmatching.alpha=prior.nonmatching.alpha, root.station=root.station, lb=lb, ub=ub, ip=ip, maxeval=maxeval,likelihoodfree=likelihoodfree,proposal.ratio=new.transform$proposal.ratio)
 		#cat("\nproposed posterior and like and prior: ",next.state$posterior,next.state$loglik,next.state$prior)
 		#cat("\nprevious posterior and like and prior: ",current.state$posterior,current.state$loglik,current.state$prior)
 		#cat("\nposterior diff exp(new - current): ",exp(next.state$posterior - current.state$posterior))
@@ -70,20 +71,14 @@ truncated.uniform.prior<-function(min=1,max=5) {
 
 #transforms just a single cell
 transform.single<-function(bayes.individual,phy) {
-	print("in transform.single")
-	print(bayes.individual)
 	valid.transform<-FALSE
-	print(paste("valid.transform",valid.transform))
 	while(!valid.transform) { #cool thing about doing this is that the hastings ratio is one: prob of going from valid to invalid is zero, as is the reverse rate
 		new.individual<-bayes.individual
 		focal.param<-sample.int(length(new.individual),1)
 		new.individual[focal.param]<-new.individual[focal.param]+sign(rnorm(1))
 		valid.transform<-valid.individual(new.individual,phy)
-		print(paste("valid.transform",valid.transform))
-
 	}
-	print(new.individual)
-	return(new.individual)
+	return(list(new.individual=new.individual,proposal.ratio=1))
 }
 
 
@@ -98,7 +93,7 @@ transform.clade<-function(bayes.individual,phy) {
 		
 		valid.transform<-valid.individual(new.individual,phy)
 	}
-	return(new.individual)	
+	return(list(new.individual=new.individual,proposal.ratio=1))
 }
 
 count.nonmatching<-function(bayes.individual) { #excludes root
@@ -111,7 +106,7 @@ count.nonmatching<-function(bayes.individual) { #excludes root
 }
 
 prior.prob<-function(bayes.individual,prior.k.theta,prior.k.sigma, prior.k.alpha, prior.nonmatching.theta, prior.nonmatching.sigma, prior.nonmatching.alpha, phy) {
-	k.list<-dredge.util(bayes.individual, phy)
+	k.list<-param.count(bayes.individual, phy)
 	k.number.prior<-vector.index.safe.offset(k.list$k.theta,prior.k.theta) * vector.index.safe.offset(k.list$k.sigma,prior.k.sigma) * vector.index.safe.offset(k.list$k.alpha,prior.k.alpha) 
 	nonmatching<-count.nonmatching(bayes.individual)
 	k.nonmatching.prior<-vector.index.safe.offset(nonmatching[1], prior.nonmatching.theta) * vector.index.safe.offset(nonmatching[2], prior.nonmatching.theta) * vector.index.safe.offset(nonmatching[3], prior.nonmatching.theta)
@@ -137,16 +132,16 @@ vector.index.safe.offset<-function(x,vec) {
 	}
 }
 
-measure.proposal<-function(phy, data, new.individual, prior.k.theta,prior.k.sigma, prior.k.alpha, prior.nonmatching.theta, prior.nonmatching.sigma, prior.nonmatching.alpha, maxeval, root.station, lb, ub, ip,likelihoodfree=FALSE) {
+measure.proposal<-function(phy, data, new.individual, prior.k.theta,prior.k.sigma, prior.k.alpha, prior.nonmatching.theta, prior.nonmatching.sigma, prior.nonmatching.alpha, maxeval, root.station, lb, ub, ip,likelihoodfree=FALSE,proposal.ratio) {
 	edge.mat.all<-edge.mat(phy,new.individual)
 	loglik=0.5
 	if(!likelihoodfree) {
 		loglik<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy)$loglik 
 	}
 	prior<-prior.prob(new.individual,prior.k.theta,prior.k.sigma, prior.k.alpha, prior.nonmatching.theta, prior.nonmatching.sigma, prior.nonmatching.alpha, phy)
-	posterior<-loglik+log(prior)
-	k.list<-dredge.util(new.individual,phy)
-	return(list(new.individual=new.individual, loglik=loglik, prior=prior, posterior=posterior, k.theta=k.list$k.theta, k.sigma=k.list$k.sigma, k.alpha=k.list$k.alpha,nRegimes=dim(edge.mat.all$regime)[1]))
+	posterior<-loglik+log(prior)+log(proposal.ratio)
+	k.list<-param.count(new.individual,phy)
+	return(list(new.individual=new.individual, loglik=loglik, prior=prior, posterior=posterior, k.theta=k.list$k.theta, k.sigma=k.list$k.sigma, k.alpha=k.list$k.alpha,nRegimes=dim(edge.mat.all$regime)[1],proposal.ratio=proposal.ratio))
 }
 
 store.state<-function(current.state,samplesfile,generation) {
