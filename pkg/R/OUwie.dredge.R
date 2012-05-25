@@ -41,7 +41,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		cat("Finished. Begin thorough optimization routine", "\n")
 
 		edge.mat<-edge.mat(phy,results$par)
-		np<-sum(unlist(param.count(rgenoud.individual,phy)))
+		np<-sum(unlist(param.count(results$par,phy)))
 		K<-sum(apply(edge.mat$regime, 2, max))
 		n=Ntip(phy)
 		
