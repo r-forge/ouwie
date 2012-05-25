@@ -100,8 +100,8 @@ plot.ouwie.dredge.result <- function(x, type=c("regime", "rate"), col.pal=c("Set
 		
 	if(type=="regime"){
 		
-		regimes<-as.factor(x$rgenoud.individual)
-		regime.lvls<-length(levels(regimes))
+		regimes<-x$rgenoud.individual
+		regime.lvls<-length(levels(as.factor(regimes)))
 		if(regime.lvls<3){
 			regime.lvls = 3
 		}
@@ -140,6 +140,44 @@ plot.ouwie.dredge.result <- function(x, type=c("regime", "rate"), col.pal=c("Set
 		plot.phylo(x$phy,edge.color=co[comp], ...)	
 		title(main="alpha")
 	}
+}
+
+get.trees<-function(x){
+	
+	obj<-NULL
+	
+	tot<-length(x$rgenoud.individual)/3
+	maps<-get.mapping(x$rgenoud.individual,x$phy)
+	
+##Get theta tree
+	x$rgenoud.individual[x$rgenoud.individual==(-1)]=0
+	ordered.maps<-x$rgenoud.individual[1:(tot-1)]
+	n.labels<-numeric(Nnode(x$phy))
+	n.labels[1]<-x$rgenoud.individual[tot]
+	n.labels[2:Nnode(x$phy)]<-ordered.maps[maps>Ntip(x$phy)]		
+	x$phy$node.label<-n.labels
+	obj$theta<-x$phy
+	
+##Get sigma tree
+	x$rgenoud.individual[x$rgenoud.individual==(-1)]=0
+	order.maps<-x$rgenoud.individual[(tot+1):(2*(tot)-1)]
+	n.labels<-numeric(Nnode(x$phy))
+	n.labels[1]<-x$rgenoud.individual[2*tot]
+	n.labels[2:Nnode(x$phy)]<-order.maps[maps>Ntip(x$phy)]		
+	x$phy$node.label<-n.labels
+	obj$sigma<-x$phy
+	
+##Get alpha tree
+	x$rgenoud.individual[x$rgenoud.individual==(-1)]=0
+	order.maps<-x$rgenoud.individual[(2*tot+1):(length(x$rgenoud.individual)-1)]
+	print(length(order.maps[maps>Ntip(x$phy)]))
+	n.labels<-numeric(Nnode(x$phy))
+	n.labels[1]<-x$rgenoud.individual[3*tot]
+	n.labels[2:Nnode(x$phy)]<-order.maps[maps>Ntip(x$phy)]		
+	x$phy$node.label<-n.labels
+	obj$alpha<-x$phy
+	
+	obj
 }
 
 param.count<-function(rgenoud.individual,phy) {
@@ -287,7 +325,7 @@ get.final.label<-function(i,rgenoud.individual,phy) {
 		parent.node <- phy$edge[ which(phy$edge[,2] == current.node), 1]
 		i <- which( mapping == parent.node ) + indexOffset
 		if (length(i) ==0 ) {
-			return ( 1) #can't find the parent node because we ARE at the root
+			return ( 1) #cannot find the parent node because we ARE at the root
 		}
 	}
 	return( rgenoud.individual[i] )

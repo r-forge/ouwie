@@ -196,14 +196,11 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		
 		DET<-determinant(V, logarithm=TRUE)
-		
-		res<-W%*%theta-x		
-		q<-t(res)%*%solve(V,res)
-		logl <- -.5*(N*log(2*pi)+as.numeric(DET$modulus)+q[1,1])
+
+		logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
 		
 		return(-logl)
 	}
-	#Informs the user that the optimization routine has started and starting value is being used (default=1)
 	
 	if(quiet==FALSE){
 		cat("Begin subplex optimization routine -- Starting value:",ip, "\n")
