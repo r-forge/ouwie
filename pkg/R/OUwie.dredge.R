@@ -41,7 +41,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		cat("Finished. Begin thorough optimization routine", "\n")
 
 		edge.mat<-edge.mat(phy,results$par)
-		np<-sum(apply(edge.mat$regime.mat, 2, max))
+		np<-sum(unlist(param.count(rgenoud.individual,phy)))
 		K<-sum(apply(edge.mat$regime, 2, max))
 		n=Ntip(phy)
 		
@@ -49,7 +49,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 		upper = rep(ub, np)
 		
 		opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"=as.character(maxeval), "ftol_rel"=.Machine$double.eps^0.5)
-		out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat)
+		out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat,rgenoud.individual=results$par)
 		loglik = (-1) * out$objective #since dev.dredge() returns negloglik
 		obj = list(loglik = loglik, AIC = -2*loglik+2*K,AICc=-2*loglik + (2*K * n / (n - K - 1)),solution=out$solution, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edge.mat$edges.ouwie, regime.mat=edge.mat$regime.mat,start=start,rgenoud.individual=results$par) 
 		class(obj)<-"ouwie.dredge.result"		
@@ -170,7 +170,6 @@ get.trees<-function(x){
 ##Get alpha tree
 	x$rgenoud.individual[x$rgenoud.individual==(-1)]=0
 	order.maps<-x$rgenoud.individual[(2*tot+1):(length(x$rgenoud.individual)-1)]
-	print(length(order.maps[maps>Ntip(x$phy)]))
 	n.labels<-numeric(Nnode(x$phy))
 	n.labels[1]<-x$rgenoud.individual[3*tot]
 	n.labels[2:Nnode(x$phy)]<-order.maps[maps>Ntip(x$phy)]		
@@ -227,7 +226,7 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 	#convert phy+regenoud.individual to simmap.tree (later, make it so that we directly go to the proper object)
 	edge.mat.all<-edge.mat(phy,rgenoud.individual)
 	#call dev.optimize
-	fit<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy) 
+	fit<-dev.optimize(edges.ouwie=edge.mat.all$edges.ouwie, regime.mat=edge.mat.all$regime, data=data,maxeval=maxeval, root.station=root.station,lb=lb, ub=ub, ip=ip, phy=phy,rgenoud.individual=rgenoud.individual) 
 	#which is an nloptr wrapper to call dev.dredge
 	#convert likelihood to AICC
 	K<-sum(apply(edge.mat.all$regime, 2, max))
@@ -245,16 +244,15 @@ dredge.akaike<-function(rgenoud.individual, phy, data, criterion="aicc",lb,ub,ip
 }
 
 
-dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip,phy=phy) {
+dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip,phy=phy,rgenoud.individual) {
 	obj<-NULL
 	
-	np<-sum(apply(regime.mat, 2, max))
+	np<-sum(unlist(param.count(rgenoud.individual,phy)))
 	lower = rep(lb, np)
 	upper = rep(ub, np)
 	ip<-ip
 	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"=as.character(maxeval), "ftol_rel"=0.01)
-	
-	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat) 
+	out = nloptr(x0=rep(ip, length.out = np), eval_f=dev.dredge, opts=opts, data=data, phy=phy,root.station=root.station, lb=lower, ub=upper, edges.ouwie=edges.ouwie, regime.mat=regime.mat,rgenoud.individual=rgenoud.individual) 
 	obj$loglik<-(-1)*out$objective 
 	obj$pars<-out$solution
 	obj
@@ -262,12 +260,13 @@ dev.optimize<-function(edges.ouwie,regime.mat,data,root.station,maxeval,lb,ub,ip
 
 
 #edges.ouwie is the edges matrix with the extra columns for regimes
-dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy) { 
+dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy,rgenoud.individual) { 
 	nRegimes<-dim(regime.mat)[1]
 	Rate.mat.full <- matrix(0, 3, nRegimes) #first row is alpha, second row is sigma, third is theta. Value of zero initially
-	k.alpha<-max(regime.mat[,3])
-	k.sigma<-max(regime.mat[,2])
-	k.theta<-max(regime.mat[,1])
+	params<-param.count(rgenoud.individual,phy)
+	k.alpha<-params[[3]]
+	k.sigma<-params[[2]]
+	k.theta<-params[[1]]
 	p.index<-1
 	for(k in sequence(k.theta)) {
 		Rate.mat.full[1,which(regime.mat[,1]==k)]<-p[p.index]
