@@ -24,7 +24,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 	
 	if(criterion!="rjmcmc") {
 		if (is.null(pop.size)) {
-			pop.size<-500 #choose better 
+			pop.size<-100 #choose better 
 		}
 		
 		cat("Begin fast optimization routine -- Starting values:", c(start$theta[,1],start$Param.est[2],start$Param.est[1]), "\n")

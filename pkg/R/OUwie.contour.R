@@ -10,7 +10,7 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
   if(sum(grepl("theta",focal.param))>0) {
     stop("contour mapping currently only works for alpha and sigma.sq parameters") 
   }
-  globalMLE<-OUwie(phy=phy,data=data,model=model,simmap.tree=simmap.tree,root.station=root.station,lb=lb, ub=ub, clade=clade,plot.resid=FALSE,eigenvect=TRUE)
+  globalMLE<-OUwie(phy=phy,data=data,model=model,simmap.tree=simmap.tree,root.station=root.station,lb=lb, ub=ub, clade=clade)
   focal.param.df<-data.frame(strsplit(focal.param,"_"),stringsAsFactors=FALSE)
   names(focal.param.df)<-c(1,2)
   

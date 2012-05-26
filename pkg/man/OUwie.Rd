@@ -5,7 +5,7 @@
 \usage{
 OUwie(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),
 simmap.tree=FALSE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, 
-plot.resid=TRUE, clade=NULL, eigenvect=FALSE, quiet=FALSE)
+clade=NULL, quiet=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes.}
@@ -16,9 +16,7 @@ plot.resid=TRUE, clade=NULL, eigenvect=FALSE, quiet=FALSE)
 \item{ip}{initial values used for the likelihood search. Can be a single value or a vector of unique values for each parameter. The default is \code{ip=1}.}
 \item{lb}{lower bound for the likelihood search. The default is \code{lb=0.000001}. Note that this value must be greater than zero.}
 \item{ub}{upper bound for the likelihood search. The default is \code{ub=1000}.}
-\item{plot.resid}{a logical indicating whether the residuals of the model should be plotted. The residuals are ordered in the same way as the tips in the tree, and color coded by selective regime. The default is \code{TRUE}.}
 \item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
-\item{eigenvect}{a logical indicating whether a matrix of eigenvectors should be written to the working directory. The default is \code{FALSE} (see Details).}
 \item{quiet}{a logical indicating whether progress should be written to the screen. The default is \code{FALSE}.}
 }
 \details{
@@ -33,18 +31,8 @@ The Hessian matrix is used as a means to estimate the approximate standard error
 For models that allow \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} to vary (i.e., \code{OUMV}, \code{OUMA}, and \code{OUMVA}), the complexity of the model can often times be greater than the information that is contained within the data. As a result one or many parameters are poorly estimated, which can cause the function to return a log-likelihood that is suboptimal. This has great potential for poor model choice and incorrect biological interpretations. An eigendecomposition of the Hessian can provide an indication of whether the search returned the maximum likelihood estimates. If all the eigenvalues of the Hessian are positive, then the Hessian is positive definite, and all parameter estimates are considered reliable. However, if there are both positive and negative eigenvalues, then the objective function is at a saddlepoint and one or several parameters cannot be estimated adequately. One solution is to just fit a simpler model. Another is to actually identify the offending parameters. This can be done through the examination of the eigenvectors (when \code{eigenvect=TRUE}). The row order corresponds to the entries in \code{index.matrix}, the columns correspond to the order of values in \code{eigval}, and the larger the value of the row entry the greater the association between the corresponding parameter and the eigenvalue. Thus, the largest values in the columns associated with negative eigenvalues are the parameters that are causing the objective function to be at a saddlepoint.
 }
 \value{
-\item{loglik}{the maximum log-likelihood.}
-\item{AIC}{Akaike information criterion.}
-\item{AICc}{Akaike information criterion corrected for sample-size.}
-\item{Param.est}{a matrix containing the maximum likelihood estimates of \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2}.}
-\item{theta}{a matrix containing the maximum likelihood estimates of \eqn{\theta}{theta}. Note: if \code{model=OU1} and \code{root.station=TRUE}, then \code{theta}=\eqn{\theta_0}{theta_0}.}
-\item{ahat}{the estimate of the root for models based on a Brownian motion process (i.e., \code{model=BM1} or \code{model=BMS}).}
-\item{Iterations}{number of iterations of the likelihood search that were executed}
-\item{Param.SE}{a matrix containing the approximate standard errors of \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2}. The standard error is calculated as the diagonal of the inverse of the Hessian matrix.}
-\item{eigval}{the eigenvalues from the decomposition of the Hessian of the likelihood function. If any \code{eigval<0} then one or more parameters were not optimized during the likelihood search (see Details)}
-\item{eigvect}{If \code{eigenvect=TRUE} the eigenvectors from the decomposition of the Hessian of the likelihood function is returned (see Details)}
-\item{index.matrix}{if \code{eigenvect=TRUE} the indices of the parameters being estimated are returned. The numbers correspond to the row in the \code{eigvect} and can useful for identifying the parameters that are causing the objective function to be at a saddlepoint (see Details)}
-\item{Diagnostic}{more informative message with the status of the optimization (see Details).}
+\code{OUwie} returns an object of class \code{Ouwie}.
+  For details on the methods of that class, see \code{OUwie-class}.
 }
 \examples{
 data(tworegime)

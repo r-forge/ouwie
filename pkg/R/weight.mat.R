@@ -177,7 +177,7 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume
 				n.cov[edges[i,3]]=nodevar[i]
 			}
 			w.piece<-mat.gen(phy,n.cov,pp)
-			W[1:(ntips),j]<-diag(w.piece)			
+			W[1:(ntips),j+1]<-diag(w.piece)			
 		}
 		
 	}
