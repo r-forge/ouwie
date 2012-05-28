@@ -296,8 +296,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 print.OUwie<-function(x, ...){
 	
 	ntips=Ntip(x$phy)
-	output<-data.frame(x$loglik,x$AIC,x$AICc,x$model,ntips, row.names=NULL)
-	row.names(output)<-NULL
+	output<-data.frame(x$loglik,x$AIC,x$AICc,x$model,ntips, row.names="")
 	names(output)<-c("-lnL","AIC","AICc","model","ntax")
 	cat("\nFit\n")
 	print(output)
