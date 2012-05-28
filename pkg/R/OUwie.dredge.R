@@ -16,8 +16,8 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 	
 	data2<-data.frame(as.character(data[,1]),sample(c(1:2),length(data[,1]), replace=T),data[,2],stringsAsFactors=FALSE)
 	phy$node.label<-sample(c(1:2),phy$Nnode, replace=T)
-	start<-OUwie(phy,data2,model=c("OU1"),plot.resid=FALSE, quiet=TRUE)
-	ip<-matrix(c(rep(start$theta[,1],Nnode(phy,internal.only=FALSE)),rep(start$solution[2],Nnode(phy,internal.only=FALSE)),rep(start$solution[1],Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #OU1
+	start<-OUwie(phy,data2,model=c("OU1"),quiet=TRUE)
+	ip<-matrix(c(rep(start$theta[1],Nnode(phy,internal.only=FALSE)),rep(start$solution[2,1],Nnode(phy,internal.only=FALSE)),rep(start$solution[1,2],Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #OU1
 
 	data<-data.frame(data[,2], data[,2], row.names=data[,1])
 	data<-data[phy$tip.label,]
@@ -27,7 +27,7 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 			pop.size<-100 #choose better 
 		}
 		
-		cat("Begin fast optimization routine -- Starting values:", c(start$theta[,1],start$Param.est[2],start$Param.est[1]), "\n")
+		cat("Begin fast optimization routine -- Starting values:", c(start$theta[1],start$solution[2,1],start$solution[1,2]), "\n")
 		nodes<-Nnode(phy,internal.only=FALSE)
 		starting.individuals<-matrix(c(rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE)),rep(0,Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #BM1
 		starting.individuals[1,c(nodes,2*nodes,3*nodes)]<-c(1,1,-1)
@@ -356,7 +356,7 @@ edge.mat<-function(phy,rgenoud.individual){ #requires full mapping: no 0 values 
 	branch.lengths[(ntips+1):(n-1)]=branching.times(phy)[-1]/max(branching.times(phy))
 	
 	#New tree matrix to be used for subsetting regimes
-	edges.ouwie=cbind(c(1:(n-1)),pp$phy$edge,pp$phy$edge.length)
+	edges.ouwie=cbind(c(1:(n-1)),phy$edge,phy$edge.length)
 	edges.ouwie=edges.ouwie[sort.list(edges.ouwie[,3]),]
 	
 	edges.ouwie[,4]=branch.lengths

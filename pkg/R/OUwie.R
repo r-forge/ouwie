@@ -305,15 +305,14 @@ print.OUwie<-function(x, ...){
 					 
 	if (is.character(x$model)) {
 		if (x$model == "BM1" | x$model == "BMS"){
-			param.est <- matrix(x$solution[x$index.mat], dim(x$index.mat))
-			rownames(param.est)<-c("alpha","sigma.sq")
+			param.est <- x$solution
 			theta.mat <- matrix(t(x$theta[1,]), 2, length(levels(x$tot.states)))
 			rownames(theta.mat)<-c("estimate", "se")
 			if(x$simmap.tree==FALSE){
-				colnames(param.est) <- colnames(theta.mat) <- levels(x$tot.states)
+				colnames(theta.mat) <- levels(x$tot.states)
 			}
 			if(x$simmap.tree==TRUE){
-				colnames(param.est) <- colnames(theta.mat) <- c(colnames(x$phy$mapped.edge))
+				colnames(theta.mat) <- c(colnames(x$phy$mapped.edge))
 			}
 			cat("Rates\n")
 			print(param.est)
@@ -324,15 +323,14 @@ print.OUwie<-function(x, ...){
 		}
 		if (x$root.station == TRUE | x$root.station==FALSE){
 			if (x$model == "OU1"){
-				param.est<- matrix(x$solution[x$index.mat], dim(x$index.mat))
-				rownames(param.est)<-c("alpha","sigma.sq")
+				param.est<- x$solution
 				theta.mat <- matrix(t(x$theta[1,]), 2, length(levels(x$tot.states)))
 				rownames(theta.mat)<-c("estimate", "se")
 				if(x$simmap.tree==FALSE){
-					colnames(param.est) <- colnames(theta.mat) <- levels(x$tot.states)
+					colnames(theta.mat) <- levels(x$tot.states)
 				}
 				if(x$simmap.tree==TRUE){
-					colnames(param.est) <- colnames(theta.mat) <- c(colnames(x$phy$mapped.edge))
+					colnames(theta.mat) <- c(colnames(x$phy$mapped.edge))
 				}
 				cat("Rates\n")
 				print(param.est)
@@ -364,16 +362,13 @@ print.OUwie<-function(x, ...){
 		if (x$root.station == FALSE){
 			if (x$model == "OUM"| x$model == "OUMV"| x$model == "OUMA" | x$model == "OUMVA"){ 
 				print(x$theta)
-				param.est<- matrix(x$solution[x$index.mat], dim(x$index.mat))
-				rownames(param.est)<-c("alpha","sigma.sq")
+				param.est<- x$solution
 				theta.mat<-matrix(t(x$theta), 2, length(levels(x$tot.states))+1)
 				rownames(theta.mat)<-c("estimate", "se")
 				if(x$simmap.tree==FALSE){
-					colnames(param.est) <- levels(x$tot.states)
 					colnames(theta.mat)<-c("Root", levels(x$tot.states))
 				}
 				if(x$simmap.tree==TRUE){
-					colnames(param.est) <- c(colnames(x$phy$mapped.edge))
 					colnames(theta.mat)<-c("Root", colnames(phy$mapped.edge))
 				}
 				cat("\nRates\n")

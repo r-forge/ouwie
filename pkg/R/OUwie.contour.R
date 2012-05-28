@@ -50,7 +50,8 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 	#now randomize order, in case we later want to do incremental saving or drawing
 	param1.points<-sample(param1.points,size=length(param1.points),replace=FALSE)
 	param2.points<-sample(param2.points,size=length(param2.points),replace=FALSE)
-	dev<-function(p,phy,data,model,simmap.tree,root.station,focal.param.vector,clade,globalMLE){ 
+	
+	dev<-function(p,phy,data,model,simmap.tree,root.station,focal.param.vector,clade, globalMLE){ 
 	#globalMLE is just for figuring out the structure of alpha and sigma.sq
 		nRegimes<-dim(globalMLE$index.mat)[2]
 		alpha<-rep(NA,nRegimes)
