@@ -49,10 +49,10 @@ nodelabels(pch=21, bg=select.reg)
 trait[1:5,]
 
 #Now fit an OU model that allows different sigma^2: 
-OUwie(tree,trait,model=c("OUMV"),root.station=TRUE, plot.resid=TRUE)
+OUwie(tree,trait,model=c("OUMV"),root.station=TRUE)
 
 #Fit an OU model based on a clade of interest:
-OUwie(tree,trait,model=c("OUMV"), root.station=TRUE, plot.resid=TRUE, clade=c("t50", "t64"))
+OUwie(tree,trait,model=c("OUMV"), root.station=TRUE, clade=c("t50", "t64"))
 
 }
 \references{

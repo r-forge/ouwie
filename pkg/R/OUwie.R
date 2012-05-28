@@ -218,7 +218,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	#Likelihood function for estimating model parameters
 	dev<-function(p){
 		
-		Rate.mat[] <- c(p, 0.0000001)[index.mat]
+		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N<-length(x[,1])
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, assume.station=bool)
@@ -248,7 +248,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	dev.theta<-function(p){
 		
 		tmp<-NULL
-		Rate.mat[] <- c(p, 0.0000001)[index.mat]
+		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		
 		N<-length(x[,1])
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree)
@@ -274,20 +274,21 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	#Calculates the Hessian for use in calculating standard errors and whether the maximum likelihood solution was found
 	h <- hessian(x=out$solution, func=dev)
 	#Using the corpcor package here to overcome possible NAs with calculating the SE
+	solution<-matrix(out$solution[index.mat], dim(index.mat))
 	solution.se<-matrix(sqrt(diag(pseudoinverse(h)))[index.mat], dim(index.mat))
-	rownames(solution.se)<-c("alpha","sigma.sq")
+	rownames(solution) <- rownames(solution.se) <- c("alpha","sigma.sq")
 	if(simmap.tree==FALSE){
-		colnames(solution.se) <- levels(tot.states)
+		colnames(solution) <- colnames(solution.se) <- levels(tot.states)
 	}
 	if(simmap.tree==TRUE){
-		colnames(solution.se) <- colnames(phy$mapped.edge)
+		colnames(solution) <- colnames(solution.se) <- colnames(phy$mapped.edge)
 	}				
 	#Eigendecomposition of the Hessian to assess reliability of likelihood estimates
 	hess.eig<-eigen(h,symmetric=TRUE)
 	#If eigenvect is TRUE then the eigenvector and index matrix will appear in the list of objects 
 	eigval<-signif(hess.eig$values,2)
 	eigvect<-round(hess.eig$vectors, 2)
-	obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=out$solution, theta=theta$theta.est, solution.se=solution.se, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res, eigval=eigval, eigvect=eigvect) 
+	obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, theta=theta$theta.est, solution.se=solution.se, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res, eigval=eigval, eigvect=eigvect) 
 	class(obj)<-"OUwie"		
 	return(obj)
 }
@@ -295,7 +296,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 print.OUwie<-function(x, ...){
 	
 	ntips=Ntip(x$phy)
-	output<-data.frame(x$loglik,x$AIC,x$AICc,x$model,ntips)
+	output<-data.frame(x$loglik,x$AIC,x$AICc,x$model,ntips, row.names=NULL)
 	row.names(output)<-NULL
 	names(output)<-c("-lnL","AIC","AICc","model","ntax")
 	cat("\nFit\n")
@@ -307,7 +308,7 @@ print.OUwie<-function(x, ...){
 			param.est <- matrix(x$solution[x$index.mat], dim(x$index.mat))
 			rownames(param.est)<-c("alpha","sigma.sq")
 			theta.mat <- matrix(t(x$theta[1,]), 2, length(levels(x$tot.states)))
-			colnames(theta.mat)<-c("estimate", "se")
+			rownames(theta.mat)<-c("estimate", "se")
 			if(x$simmap.tree==FALSE){
 				colnames(param.est) <- colnames(theta.mat) <- levels(x$tot.states)
 			}
@@ -343,15 +344,14 @@ print.OUwie<-function(x, ...){
 		}
 		if (x$root.station == TRUE){
 			if (x$model == "OUM"| x$model == "OUMV"| x$model == "OUMA" | x$model == "OUMVA"){
-				param.est<- matrix(x$solution[x$index.mat], dim(x$index.mat))
-				rownames(param.est)<-c("alpha","sigma.sq")
+				param.est<- x$solution
 				theta.mat<-matrix(t(x$theta), 2, length(levels(x$tot.states)))
 				rownames(theta.mat)<-c("estimate", "se")
 				if(x$simmap.tree==FALSE){
-					colnames(param.est) <- colnames(theta.mat)<- levels(x$tot.states)
+					colnames(theta.mat)<- levels(x$tot.states)
 				}
 				if(x$simmap.tree==TRUE){
-					colnames(param.est) <- colnames(theta.mat) <- c(colnames(x$phy$mapped.edge))
+					colnames(theta.mat) <- c(colnames(x$phy$mapped.edge))
 				}
 				cat("\nRates\n")
 				print(param.est)
