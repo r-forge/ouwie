@@ -65,6 +65,9 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume
 						if (regimenumber==j){
 							nodevar[i]<-exp(-alpha[root.state])*(exp(alpha[regimenumber]*newtime)-exp(alpha[regimenumber]*oldtime))
 						}
+						else{
+							nodevar[i]=0
+						}
 						oldtime<-newtime
 						newregime<-regimenumber
 					}
@@ -143,6 +146,9 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume
 						regimenumber<-which(colnames(phy$mapped.edge)==names(currentmap)[regimeindex])
 						if (regimenumber==j) {
 							nodevar[i]<-exp(-alpha[root.state])*(exp(alpha[regimenumber]*newtime)-exp(alpha[regimenumber]*oldtime))
+						}
+						else{
+							nodevar[i]=0
 						}
 						oldtime<-newtime
 						newregime<-regimenumber

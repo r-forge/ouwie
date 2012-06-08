@@ -10,7 +10,7 @@
 #and the multiple alphas and sigmas (OUMVA). 
 
 OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, clade=NULL, quiet=FALSE){
-	
+
 	#Makes sure the data is in the same order as the tip labels
 	data<-data.frame(data[,2], data[,3], row.names=data[,1])
 	data<-data[phy$tip.label,]
@@ -276,7 +276,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	#Using the corpcor package here to overcome possible NAs with calculating the SE
 	solution<-matrix(out$solution[index.mat], dim(index.mat))
 	solution.se<-matrix(sqrt(diag(pseudoinverse(h)))[index.mat], dim(index.mat))
-	rownames(solution) <- rownames(solution.se) <- c("alpha","sigma.sq")
+	rownames(solution) <- rownames(solution.se) <- rownames(index.mat) <- c("alpha","sigma.sq")
 	if(simmap.tree==FALSE){
 		colnames(solution) <- colnames(solution.se) <- levels(tot.states)
 	}
@@ -395,6 +395,6 @@ print.OUwie<-function(x, ...){
 	}
 	else{
 		cat("Arrived at a reliable solution","\n")
-	}
-	
+	}	
 }
+

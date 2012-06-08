@@ -28,11 +28,30 @@ If \code{root.station} is \code{TRUE} (the default), \eqn{\theta_0}{theta_0} is 
 
 The Hessian matrix is used as a means to estimate the approximate standard errors of the model parameters and to assess whether they are the maximum likelihood estimates. The variance-covariance matrix of the estimated values of \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} are computed as the inverse of the Hessian matrix and the standard errors are the square roots of the diagonals of this matrix. The Hessian is a matrix of second-order derivatives and is approximated in the R package \code{numDeriv}. So, if changes in the value of a parameter results in sharp changes in the slope around the maximum of the log-likelihood function, the second-order derivative will be large, the standard error will be small, and the parameter estimate is considered stable. On the other hand, if the second-order derivative is nearly zero, then the change in the slope around the maximum is also nearly zero, indicating that the parameter value can be moved in any direction without greatly affecting the log-likelihood. In such situations, the standard error of the parameter will be large. 
 
-For models that allow \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} to vary (i.e., \code{OUMV}, \code{OUMA}, and \code{OUMVA}), the complexity of the model can often times be greater than the information that is contained within the data. As a result one or many parameters are poorly estimated, which can cause the function to return a log-likelihood that is suboptimal. This has great potential for poor model choice and incorrect biological interpretations. An eigendecomposition of the Hessian can provide an indication of whether the search returned the maximum likelihood estimates. If all the eigenvalues of the Hessian are positive, then the Hessian is positive definite, and all parameter estimates are considered reliable. However, if there are both positive and negative eigenvalues, then the objective function is at a saddlepoint and one or several parameters cannot be estimated adequately. One solution is to just fit a simpler model. Another is to actually identify the offending parameters. This can be done through the examination of the eigenvectors (when \code{eigenvect=TRUE}). The row order corresponds to the entries in \code{index.matrix}, the columns correspond to the order of values in \code{eigval}, and the larger the value of the row entry the greater the association between the corresponding parameter and the eigenvalue. Thus, the largest values in the columns associated with negative eigenvalues are the parameters that are causing the objective function to be at a saddlepoint.
+For models that allow \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} to vary (i.e., \code{OUMV}, \code{OUMA}, and \code{OUMVA}), the complexity of the model can often times be greater than the information that is contained within the data. As a result one or many parameters are poorly estimated, which can cause the function to return a log-likelihood that is suboptimal. This has great potential for poor model choice and incorrect biological interpretations. An eigendecomposition of the Hessian can provide an indication of whether the search returned the maximum likelihood estimates. If all the eigenvalues of the Hessian are positive, then the Hessian is positive definite, and all parameter estimates are considered reliable. However, if there are both positive and negative eigenvalues, then the objective function is at a saddlepoint and one or several parameters cannot be estimated adequately. One solution is to just fit a simpler model. Another is to actually identify the offending parameters. This can be done through the examination of the eigenvectors. The row order corresponds to the entries in \code{index.matrix}, the columns correspond to the order of values in \code{eigval}, and the larger the value of the row entry the greater the association between the corresponding parameter and the eigenvalue. Thus, the largest values in the columns associated with negative eigenvalues are the parameters that are causing the objective function to be at a saddlepoint.
 }
 \value{
-\code{OUwie} returns an object of class \code{Ouwie}.
-  For details on the methods of that class, see \code{OUwie-class}.
+\code{OUwie} returns an object of class \code{OUwie}. This is a list with elements:
+\item{$loglik}{the maximum negative log-likelihood.}
+\item{$AIC}{Akaike information criterion.}
+\item{$AICc}{Akaike information criterion corrected for sample-size.}
+\item{$model}{The model being fit}
+\item{$solution}{a matrix containing the maximum likelihood estimates of \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2}.}
+\item{$theta}{a matrix containing the maximum likelihood estimates of \eqn{\theta}{theta} and it standard error.}
+\item{$solution.se}{a matrix containing the approximate standard errors of \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2}. The standard error is calculated as the diagonal of the inverse of the Hessian matrix.}
+\item{$tot.state}{A vector of names for the different regimes}
+\item{$index.mat}{The indices of the parameters being estimated are returned. The numbers correspond to the row in the \code{eigvect} and can useful for identifying the parameters that are causing the objective function to be at a saddlepoint (see Details)}
+\item{$simmap.tree}{A logical indicating whether the input phylogeny is a SIMMAP formatted tree.}
+\item{$opts}{Internal settings of the likelihood search}
+\item{$data}{User-supplied dataset}
+\item{$phy}{User-supplied tree}
+\item{$root.station}{A logical indicating whether the starting state, \eqn{\theta_0}{theta_0}, was estimated}
+\item{$lb}{The lower bound set}
+\item{$ub}{The upper bound set}
+\item{$iterations}{Number of iterations of the likelihood search that were executed}
+\item{$res}{A vector of residuals from the model fit.  The residuals are ordered in the same way as the tips in the tree.}
+\item{$eigval}{The eigenvalues from the decomposition of the Hessian of the likelihood function. If any \code{eigval<0} then one or more parameters were not optimized during the likelihood search (see Details)}
+\item{$eigvect}{The eigenvectors from the decomposition of the Hessian of the likelihood function is returned (see Details)}
 }
 \examples{
 data(tworegime)

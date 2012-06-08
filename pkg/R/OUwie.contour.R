@@ -57,14 +57,10 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 		alpha<-rep(NA,nRegimes)
 		sigma.sq<-rep(NA,nRegimes)
 		for (freeParam in sequence(max(globalMLE$index.mat))) {
-			print(globalMLE$index.mat)
-			print(freeParam)
 			entries<-which(globalMLE$index.mat==freeParam,arr.ind=TRUE)
-			print(entries)
 			paramValue<-NA
 			firstEntry<-entries[1,]
 			paramNameRoot<-row.names(entries)[1]
-			print(paramNameRoot)
 			firstEntryName<-paste(paramNameRoot,firstEntry[2],sep="_")
 			matchingSetParams<-which(firstEntryName==names(focal.param.vector))
 			if (length(matchingSetParams)==1) {
