@@ -232,12 +232,12 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 
 		theta.est<-cbind(theta,se)
 		res<-W%*%theta-x
+		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
+		
 		DET<-determinant(V, logarithm=TRUE)
 		
-		res<-W%*%theta-x		
-		q<-t(res)%*%solve(V,res)
-		logl <- -.5*(N*log(2*pi)+as.numeric(DET$modulus)+q[1,1])
-		
+		logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
+				
 		list(-logl,theta.est,res)
 	}
 	#Informs the user that the optimization routine has started and starting value is being used (default=1)

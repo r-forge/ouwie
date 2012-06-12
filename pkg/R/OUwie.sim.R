@@ -174,7 +174,6 @@ OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, alpha, sigma.sq, theta0
 				nodecode=rbind(nodecode,newrow)
 				oldtime=newtime
 			}
-			
 			if(length(phy$maps[[i]])==1){
 				regimeduration<-currentmap[1]
 				newtime<-oldtime+regimeduration
