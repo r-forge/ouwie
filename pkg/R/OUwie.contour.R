@@ -38,6 +38,12 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 	#now lets figure out what the overall boundaries will be
 	xlim=range(param1.points,as.numeric(focal.param.df[3,1])-1.96*as.numeric(focal.param.df[4,1]),as.numeric(focal.param.df[3,1])+1.96*as.numeric(focal.param.df[4,1]))
 	ylim=range(param2.points,as.numeric(focal.param.df[3,2])-1.96*as.numeric(focal.param.df[4,2]),as.numeric(focal.param.df[3,2])+1.96*as.numeric(focal.param.df[4,2]))
+	if(xlim[1]<0){
+		xlim[1]=0
+	}
+	if(ylim[1]<0){
+		ylim[1]=0
+	}
 	if(strsplit(focal.param,"_")[[1]][1] == strsplit(focal.param,"_")[[2]][1]) {
 		xlim=range(c(param1.points,param2.points,xlim,ylim))
 		ylim=range(c(param1.points,param2.points,ylim,xlim))
@@ -80,6 +86,9 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 			}
 		}
 		loglik<-OUwie.fixed(phy=phy,data=data, model=model,simmap.tree=simmap.tree,root.station=root.station,alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade)$loglik
+		if(loglik==Inf){
+			loglik=-10000000
+		}
 		print(paste("loglik is ",loglik))
 		return(-loglik)
 	}

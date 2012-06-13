@@ -128,7 +128,6 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		#Resort the edge matrix so that it looks like the original matrix order
 		edges=edges[sort.list(edges[,1]),]
 	}
-	data[,2]<-as.numeric(data[,2])
 	x<-as.matrix(data[,2])
 	#Matches the model with the appropriate parameter matrix structure
 	if (is.character(model)) {
