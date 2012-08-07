@@ -4,7 +4,7 @@
 \description{Plots likelihood surface for pairs of free parameters for generalized Ornstein-Uhlenbeck-based Hansen models of continuous characters evolving under discrete selective regimes.}
 \usage{
 OUwie.contour(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,
-root.station=TRUE, lb=0.000001, ub=1000, focal.param=NULL, clade=NULL, nrep=1000, sd.mult=3, 
+root.station=TRUE, lb=0.000001, ub=1000, focal.param=NULL, clade=NULL, mserr=FALSE, nrep=1000, sd.mult=3, 
 levels=c(0.5,1,1.5,2), likelihood.boundary=Inf, lwd=2, \dots)
 }       
 \arguments{
@@ -17,6 +17,7 @@ levels=c(0.5,1,1.5,2), likelihood.boundary=Inf, lwd=2, \dots)
 \item{ub}{upper bound for the likelihood search. The default is \code{ub=1000}.}
 \item{focal.param}{a character vector with the pair of parameters (sigma.sq and/or alpha) to plot (see Details).}
 \item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
+\item{mserr}{a logical indicating whether a fourth column in the data matrix contains measurement error for each species mean. The default is \code{FALSE}.}
 \item{nrep}{the number of points to use for the likelihood surface.}
 \item{sd.mult}{the sd for the normal distribution to pull random points from is sd.mult * se for each parameter.}
 \item{levels}{the levels at which to draw contour lines, measured as lnL units away from the best values.}

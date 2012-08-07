@@ -4,11 +4,22 @@
 
 #Allows the user to calculate the likelihood given a specified set of parameter values. 
 
-OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL){
+OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL, mserr=FALSE){
 
 	#Makes sure the data is in the same order as the tip labels
-	data<-data.frame(data[,2], data[,3], row.names=data[,1])
-	data<-data[phy$tip.label,]
+	if(mserr==FALSE){
+		data<-data.frame(data[,2], data[,3], row.names=data[,1])
+		data<-data[phy$tip.label,]
+	}
+	if(mserr==TRUE){
+		if(!dim(data)[2]==4){
+			cat("You specified measurement error should be incorporated, but this information is missing:\n")
+		}
+		else{
+			data<-data.frame(data[,2], data[,3], data[,4], row.names=data[,1])
+			data<-data[phy$tip.label,]
+		}
+	}
 	
 	#Values to be used throughout
 	n=max(phy$edge[,1])
@@ -220,7 +231,11 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 		N<-length(x[,1])
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, assume.station=bool)
-		
+
+		if(mserr==TRUE){
+			diag(V)<-diag(V)+(data[,3]^2)
+		}
+
 		if(is.null(theta)){
 			theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 			se<-sqrt(diag(pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)))

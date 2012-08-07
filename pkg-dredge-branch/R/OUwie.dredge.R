@@ -22,8 +22,8 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 	data<-data.frame(data[,2], data[,2], row.names=data[,1])
 	data<-data[phy$tip.label,]
 	
-	if(criterion!="rjmcmc") {
-		if (is.null(pop.size)) {
+	if(criterion!="rjmcmc"){
+		if (is.null(pop.size)){
 			pop.size<-100 #choose better 
 		}
 		
