@@ -55,15 +55,9 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 		#Obtains the state at the root
 		root.state=which(colnames(phy$mapped.edge)==names(phy$maps[[1]][1]))
 		##Begins the construction of the edges matrix -- similar to the ouch format##
-		#Makes a vector of absolute times in proportion of the total length of the tree
-		branch.lengths=rep(0,(n-1))
-		branch.lengths[(ntips+1):(n-1)]=branching.times(phy)[-1]/max(branching.times(phy))
-		
-		#New tree matrix to be used for subsetting regimes
-		edges=cbind(c(1:(n-1)),phy$edge,phy$edge.length)
+		edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
+		edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
 		edges=edges[sort.list(edges[,3]),]
-		
-		edges[,4]=branch.lengths
 		
 		#Resort the edge matrix so that it looks like the original matrix order
 		edges=edges[sort.list(edges[,1]),]
@@ -90,37 +84,28 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 				phy$node.label<-sample(c(1:k),phy$Nnode, replace=T)
 				int.states=length(levels(tip.states))
 				#Since we only really have one global regime, make up the internal nodes -- this could be improved
-				phy$node.label<-as.numeric(int.states)
-				branch.lengths=rep(0,(n-1))
-				branch.lengths[(ntips+1):(n-1)]=branching.times(phy)[-1]/max(branching.times(phy))
-				
+				phy$node.label<-as.numeric(int.states)				
 				#Obtain root state -- for both models assume the root state to be 1 since no other state is used even if provided in the tree
 				root.state<-1
 				#New tree matrix to be used for subsetting regimes
-				edges=cbind(c(1:(n-1)),phy$edge,phy$edge.length)
+				edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
+				edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
 				edges=edges[sort.list(edges[,3]),]
-				
-				edges[,4]=branch.lengths
+
 				regime <- matrix(0,nrow=length(edges[,1]),ncol=k)
 				regime[,1]<-1
 				regime[,2:k]<-0
 				
 				edges=cbind(edges,regime)
 			}
-			else{
-				##Begins the construction of the edges matrix -- similar to the ouch format##
-				#Makes a vector of absolute times in proportion of the total length of the tree
-				branch.lengths=rep(0,(n-1))
-				branch.lengths[(ntips+1):(n-1)]=branching.times(phy)[-1]/max(branching.times(phy))
-				
+			else{				
 				#Obtain root state and internal node labels
 				root.state<-phy$node.label[1]
 				int.state<-phy$node.label[-1]
 				#New tree matrix to be used for subsetting regimes
-				edges=cbind(c(1:(n-1)),phy$edge,phy$edge.length)
+				edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
+				edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
 				edges=edges[sort.list(edges[,3]),]
-				
-				edges[,4]=branch.lengths
 				
 				mm<-c(data[,1],int.state)
 				regime <- matrix(0,nrow=length(mm),ncol=length(unique(mm)))
