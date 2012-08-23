@@ -234,7 +234,6 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 
 		theta.est<-cbind(theta,se)
 		res<-W%*%theta-x
-		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		
 		DET<-determinant(V, logarithm=TRUE)
 		
