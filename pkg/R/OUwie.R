@@ -98,8 +98,9 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				
 				regime <- matrix(0,nrow=length(edges[,1]),ncol=k)
 				regime[,1]<-1
-				regime[,2:k]<-0
-				
+				if (k>1) {
+					regime[,2:k]<-0
+				}
 				edges=cbind(edges,regime)
 			}
 			else{			
