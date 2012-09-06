@@ -3,8 +3,7 @@
 \title{Generalized Hansen model likelihood calculator}
 \description{Allows the user to calculate the likelihood given a specified set of parameter values}
 \usage{
-OUwie.fixed(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,
-scaleHeight=TRUE, root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL,mserr=FALSE)
+OUwie.fixed(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=TRUE, root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL, mserr=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes}

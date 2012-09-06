@@ -3,9 +3,7 @@
 \title{Contour plot of likelihood surface}
 \description{Plots likelihood surface for pairs of free parameters for generalized Ornstein-Uhlenbeck-based Hansen models of continuous characters evolving under discrete selective regimes.}
 \usage{
-OUwie.contour(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,
-scaleHeight=TRUE,root.station=TRUE, lb=0.000001, ub=1000, focal.param=NULL, clade=NULL, mserr=FALSE, 
-nrep=1000, sd.mult=3, levels=c(0.5,1,1.5,2), likelihood.boundary=Inf, lwd=2, \dots)
+OUwie.contour(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=TRUE,root.station=TRUE, lb=0.000001, ub=1000, focal.param=NULL, clade=NULL, mserr=FALSE, nrep=1000, sd.mult=3, levels=c(0.5,1,1.5,2), likelihood.boundary=Inf, lwd=2, \dots)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes.}

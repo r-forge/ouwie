@@ -3,9 +3,7 @@
 \title{Generalized Hansen models}
 \description{Fits generalized Ornstein-Uhlenbeck-based Hansen models of continuous characters evolving under discrete selective regimes.}
 \usage{
-OUwie(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),
-simmap.tree=FALSE, scaleHeight=TRUE, root.station=TRUE, ip=1, lb=0.000001, 
-ub=1000, clade=NULL, mserr=FALSE, diagn=TRUE, quiet=FALSE)
+OUwie(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=TRUE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, clade=NULL, mserr=FALSE, diagn=TRUE, quiet=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes.}
