@@ -17,7 +17,7 @@
 #multiple alphas (OUSMA): alpha=c(0.5,0.1); sigma.sq=c(0.9,0.9); theta0=0; theta=c(1,2)
 #multiple alphas and sigmas (OUSMVA): alpha=c(0.5,0.1); sigma.sq=c(0.45,0.9); theta0=0; theta=c(1,2)
 
-OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, scaleHeight=TRUE, alpha, sigma.sq, theta0, theta){
+OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, scaleHeight=FALSE, alpha, sigma.sq, theta0, theta){
 
 	if(simmap.tree==FALSE){
 		#This is annoying, but the second column has to be in there twice otherwise, error.

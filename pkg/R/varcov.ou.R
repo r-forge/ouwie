@@ -2,7 +2,7 @@
 
 #written by Jeremy M. Beaulieu
 
-varcov.ou<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleHeight=TRUE){
+varcov.ou<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleHeight=FALSE){
 	
 	if(is.null(root.state)) {
 		root.state<-which(edges[dim(edges)[1],]==1)-5
