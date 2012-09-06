@@ -2,7 +2,7 @@
 
 #written by Jeremy M. Beaulieu
 
-weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume.station=TRUE){
+weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleHeight=TRUE, assume.station=TRUE){
 	
 	n=max(phy$edge[,1])
 	ntips=length(phy$tip.label)
@@ -41,8 +41,12 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume
 				newtime=edges[i,5]
 				
 				if(simmap.tree==TRUE){
-					currentmap<-phy$maps[[i]]
-					current=edges[i,4]
+					if(scaleHeight==TRUE){
+						currentmap<-phy$maps[[i]]/max(nodeHeights(phy))
+					}
+					else{
+						currentmap<-phy$maps[[i]]
+					}					
 				}
 				if(simmap.tree==FALSE){
 					newregime=which(edges[i,6:(k+5)]==1)
@@ -56,7 +60,7 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume
 					nodecode=rbind(nodecode,newrow)
 				}
 				if(simmap.tree==TRUE){
-					for (regimeindex in 1:length(currentmap)) {
+					for (regimeindex in 1:length(currentmap)){
 						regimeduration<-currentmap[regimeindex]
 						newtime<-oldtime+regimeduration
 						regimenumber<-which(colnames(phy$mapped.edge)==names(currentmap)[regimeindex])
@@ -118,9 +122,14 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, assume
 				desc = edges[i, 3]
 				oldtime=edges[i,4]
 				newtime=edges[i,5]
+			
 				if(simmap.tree==TRUE){
-					currentmap<-phy$maps[[i]]
-					current=edges[i,4]
+					if(scaleHeight==TRUE){
+						currentmap<-phy$maps[[i]]/max(nodeHeights(phy))
+					}
+					else{
+						currentmap<-phy$maps[[i]]
+					}					
 				}
 				if(simmap.tree==FALSE){
 					newregime=which(edges[i,6:(k+5)]==1)

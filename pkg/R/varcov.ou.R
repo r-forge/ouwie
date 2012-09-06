@@ -2,10 +2,10 @@
 
 #written by Jeremy M. Beaulieu
 
-varcov.ou<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE){
+varcov.ou<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleHeight=TRUE){
 	
 	if(is.null(root.state)) {
-		root.state<-which(edges[dim(edges)[1] , ]==1)-5
+		root.state<-which(edges[dim(edges)[1],]==1)-5
 		print(root.state)
 		edges<-edges[-1*dim(edges)[1],]
 	}
@@ -36,8 +36,13 @@ varcov.ou<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE){
 			anc = edges[i, 2]
 			desc = edges[i, 3]
 			
-			currentmap<-phy$maps[[i]]
-			current=edges[i,4]
+			if(scaleHeight==TRUE){
+				currentmap<-phy$maps[[i]]/max(nodeHeights(phy))
+			}
+			else{
+				currentmap<-phy$maps[[i]]
+			}
+			oldtime=edges[i,4]
 			
 			if(anc%in%nodecode[,1]){
 				start=which(nodecode[,1]==anc)

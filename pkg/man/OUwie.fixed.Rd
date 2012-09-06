@@ -4,13 +4,14 @@
 \description{Allows the user to calculate the likelihood given a specified set of parameter values}
 \usage{
 OUwie.fixed(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,
-root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL,mserr=FALSE)
+scaleHeight=TRUE, root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL,mserr=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes}
 \item{data}{a dataframe containing species information (see Details)}
 \item{model}{models to fit to comparative data (see Details).}
 \item{simmap.tree}{a logical indicating whether the input tree is in SIMMAP format. The default is \code{FALSE}.} 
+\item{scaleHeight}{a logical indicating whether the total tree height should be scaled to 1 (see Details). The default is \code{FALSE}.} 
 \item{root.station}{a logical indicating whether the starting state, \eqn{\theta_0}{theta_0}, should be estimated.}
 \item{alpha}{a numeric vector giving the values of \eqn{\alpha}{alpha} for each selective regime}
 \item{sigma.sq}{a numeric vector giving the values of \eqn{\sigma^2}{sigma^2} for each selective regime} 
@@ -47,6 +48,6 @@ alpha=c(1.0,0.5)
 sigma.sq=c(0.45,0.9)
 theta=c(1.0,2.0)
 
-OUwie.fixed(tree,trait,model=c("OUMVA"), simmap.tree=FALSE, clade=NULL, alpha,sigma.sq,theta)
+OUwie.fixed(tree,trait,model=c("OUMVA"), simmap.tree=FALSE, scaleHeight=TRUE,clade=NULL, alpha,sigma.sq,theta)
 }
 \author{Jeremy M. Beaulieu}

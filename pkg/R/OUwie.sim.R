@@ -17,7 +17,7 @@
 #multiple alphas (OUSMA): alpha=c(0.5,0.1); sigma.sq=c(0.9,0.9); theta0=0; theta=c(1,2)
 #multiple alphas and sigmas (OUSMVA): alpha=c(0.5,0.1); sigma.sq=c(0.45,0.9); theta0=0; theta=c(1,2)
 
-OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, alpha, sigma.sq, theta0, theta){
+OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, scaleHeight=TRUE, alpha, sigma.sq, theta0, theta){
 
 	if(simmap.tree==FALSE){
 		#This is annoying, but the second column has to be in there twice otherwise, error.
@@ -41,7 +41,9 @@ OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, alpha, sigma.sq, theta0
 		
 		#New tree matrix to be used for subsetting regimes
 		edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-		edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+		if(scaleHeight==TRUE){
+			edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+		}
 		edges=edges[sort.list(edges[,3]),]
 
 		mm<-c(data[,1],int.state)
@@ -127,7 +129,9 @@ OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, alpha, sigma.sq, theta0
 		
 		#New tree matrix to be used for subsetting regimes
 		edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-		edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+		if(scaleHeight==TRUE){
+			edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+		}
 		edges=edges[sort.list(edges[,3]),]
 		
 		#Resort the edge matrix so that it looks like the original matrix order
@@ -152,11 +156,14 @@ OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, alpha, sigma.sq, theta0
 			
 			anc = edges[i, 2]
 			desc = edges[i, 3]
-			oldtime=edges[i,4]
-			newtime=edges[i,5]
 
-			currentmap<-phy$maps[[i]]
-			current=edges[i,4]
+			if(scaleHeight==TRUE){
+				currentmap<-phy$maps[[i]]/max(nodeHeights(phy))
+			}
+			else{
+				currentmap<-phy$maps[[i]]
+			}
+			oldtime=edges[i,4]
 			
 			if(anc%in%nodecode[,1]){
 				start=which(nodecode[,1]==anc)

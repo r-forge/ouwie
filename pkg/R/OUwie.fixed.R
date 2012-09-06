@@ -4,7 +4,7 @@
 
 #Allows the user to calculate the likelihood given a specified set of parameter values. 
 
-OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL, mserr=FALSE){
+OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),simmap.tree=FALSE,scaleHeight=TRUE,root.station=TRUE, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL, mserr=FALSE){
 
 	#Makes sure the data is in the same order as the tip labels
 	if(mserr==FALSE){
@@ -46,7 +46,7 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 	}
 	if(simmap.tree==TRUE){
 		k<-length(colnames(phy$mapped.edge))
-		int.states<-factor(colnames(phy$mapped.edge))
+		tot.states<-factor(colnames(phy$mapped.edge))
 		tip.states<-factor(data[,1])
 		data[,1]<-as.numeric(tip.states)
 		
@@ -56,7 +56,11 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 		root.state=which(colnames(phy$mapped.edge)==names(phy$maps[[1]][1]))
 		##Begins the construction of the edges matrix -- similar to the ouch format##
 		edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-		edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+
+		if(scaleHeight==TRUE){
+			edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+		}
+		
 		edges=edges[sort.list(edges[,3]),]
 		
 		#Resort the edge matrix so that it looks like the original matrix order
@@ -89,7 +93,11 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 				root.state<-1
 				#New tree matrix to be used for subsetting regimes
 				edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-				edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+			
+				if(scaleHeight==TRUE){
+					edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+				}
+				
 				edges=edges[sort.list(edges[,3]),]
 
 				regime <- matrix(0,nrow=length(edges[,1]),ncol=k)
@@ -106,7 +114,11 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 				int.state<-phy$node.label[-1]
 				#New tree matrix to be used for subsetting regimes
 				edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-				edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+			
+				if(scaleHeight==TRUE){
+					edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+				}
+				
 				edges=edges[sort.list(edges[,3]),]
 				
 				mm<-c(data[,1],int.state)
@@ -241,7 +253,7 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 				
 		list(-logl,theta.est,res)
 	}
-	#Informs the user that the optimization routine has started and starting value is being used (default=1)
+
 	cat("Calculating likelihood using fixed parameter values:",c(alpha,sigma.sq,theta), "\n")
 	
 	fixed.fit <- dev()

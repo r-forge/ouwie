@@ -9,7 +9,7 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA), 
 #and the multiple alphas and sigmas (OUMVA). 
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, clade=NULL, mserr=FALSE, diagn=TRUE, quiet=FALSE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=TRUE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, clade=NULL, mserr=FALSE, diagn=TRUE, quiet=FALSE){
 	
 	#Makes sure the data is in the same order as the tip labels
 	if(mserr==FALSE){
@@ -18,7 +18,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	}
 	if(mserr==TRUE){
 		if(!dim(data)[2]==4){
-			cat("You specified measurement error should be incorporated, but this information is missing:\n")
+			stop("You specified measurement error should be incorporated, but this information is missing")
 		}
 		else{
 		data<-data.frame(data[,2], data[,3], data[,4], row.names=data[,1])
@@ -61,7 +61,10 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		root.state=which(colnames(phy$mapped.edge)==names(phy$maps[[1]][1]))
 		##Begins the construction of the edges matrix -- similar to the ouch format##
 		edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-		edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+		
+		if(scaleHeight==TRUE){
+			edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+		}
 		edges=edges[sort.list(edges[,3]),]
 		
 		#Resort the edge matrix so that it looks like the original matrix order
@@ -93,7 +96,11 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				root.state<-1
 				#New tree matrix to be used for subsetting regimes
 				edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-				edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+				
+				if(scaleHeight==TRUE){
+					edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+				}
+				
 				edges=edges[sort.list(edges[,3]),]
 				
 				regime <- matrix(0,nrow=length(edges[,1]),ncol=k)
@@ -109,7 +116,11 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				int.state<-phy$node.label[-1]
 				#New tree matrix to be used for subsetting regimes
 				edges=cbind(c(1:(n-1)),phy$edge,nodeHeights(phy))
-				edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+				
+				if(scaleHeight==TRUE){
+					edges[,4:5]<-edges[,4:5]/max(nodeHeights(phy))
+				}
+				
 				edges=edges[sort.list(edges[,3]),]
 
 				mm<-c(data[,1],int.state)
@@ -217,8 +228,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		
 		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N<-length(x[,1])
-		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree)
-		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, assume.station=bool)
+		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree,scaleHeight=scaleHeight)
+		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight,assume.station=bool)
 		
 		if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)		
 
@@ -254,8 +265,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		
 		N<-length(x[,1])
-		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree)
-		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, assume.station=bool)
+		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
+		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
 	
 		if(mserr==TRUE){
 			diag(V)<-diag(V)+(data[,3]^2)
