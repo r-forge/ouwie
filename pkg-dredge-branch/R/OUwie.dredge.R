@@ -267,7 +267,7 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy,rgenoud.indi
 	k.sigma<-params[[2]]
 	k.theta<-params[[1]]
 	p.index<-1
-	for(k in sequence(k.theta)) {
+	for(k in sequence(k.alpha)) {
 		Rate.mat.full[1,which(regime.mat[,1]==k)]<-p[p.index]
 		p.index<-p.index+1
 	}
@@ -275,11 +275,12 @@ dev.dredge<-function(p,edges.ouwie,regime.mat,data,root.station,phy,rgenoud.indi
 		Rate.mat.full[2,which(regime.mat[,2]==k)]<-p[p.index]
 		p.index<-p.index+1
 	}
-	for(k in sequence(k.alpha)) {
+	for(k in sequence(k.theta)) {
 		Rate.mat.full[3,which(regime.mat[,3]==k)]<-p[p.index]
 		p.index<-p.index+1
 	}
 	Rate.mat<-matrix(Rate.mat.full[1:2,],nrow=2,ncol=nRegimes) #deals with case of single column Rate.mat.full being changed into a vector rather than left as a matrix
+	print(Rate.mat)
 	root.state<-NULL
 	edges.ouwie.no.root<-edges.ouwie[1:(dim(edges.ouwie)[1]-1),]
 	x<-as.matrix(data[,1])
