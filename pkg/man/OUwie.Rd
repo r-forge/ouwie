@@ -16,7 +16,7 @@ OUwie(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.
 \item{lb}{lower bound for the likelihood search. The default is \code{lb=0.000001}. Note that this value must be greater than zero.}
 \item{ub}{upper bound for the likelihood search. The default is \code{ub=1000}.}
 \item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
-\item{mserr}{a logical indicating whether a fourth column in the data matrix contains measurement error for each species mean. The default is \code{FALSE}.}
+\item{mserr}{a logical indicating whether a fourth column in the data matrix contains measurement error for each species mean. The measurement error is assumed to be the standard error of the species mean. The default is \code{FALSE}.}
 \item{diagn}{a logical indicating whether the full diagnostic analysis should be carried out. The default is \code{TRUE}.}
 \item{quiet}{a logical indicating whether progress should be written to the screen. The default is \code{FALSE}.}
 }

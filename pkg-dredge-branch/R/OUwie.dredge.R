@@ -18,10 +18,8 @@ OUwie.dredge<-function(phy,data, criterion=c("aicc","aic","rjmcmc"), theta.max.k
 	phy$node.label<-sample(c(1:2),phy$Nnode, replace=T)
 	start<-OUwie(phy,data2,model=c("OU1"),quiet=TRUE)
 	ip<-matrix(c(rep(start$theta[1],Nnode(phy,internal.only=FALSE)),rep(start$solution[2,1],Nnode(phy,internal.only=FALSE)),rep(start$solution[1,2],Nnode(phy,internal.only=FALSE))),nrow=1,ncol=3*Nnode(phy,internal.only=FALSE)) #OU1
-
 	data<-data.frame(data[,2], data[,2], row.names=data[,1])
 	data<-data[phy$tip.label,]
-	
 	if(criterion!="rjmcmc"){
 		if (is.null(pop.size)){
 			pop.size<-100 #choose better 
@@ -385,12 +383,12 @@ edge.mat<-function(phy,rgenoud.individual){ #requires full mapping: no 0 values 
 	#Generates an indicator matrix from the regime vector
 	for (i in 1:length(tmp)) {
 		regime[i,tmp[i]] <- 1 
-	}	
+	}
 	#Finishes the edges matrix
 	edges.ouwie=cbind(edges.ouwie,regime)
 	#Resort the edge matrix so that it looks like the original matrix order:
 	obj$edges.ouwie=edges.ouwie[sort.list(edges.ouwie[,1]),]
-	
+	print(obj)
 	obj
 }
 
