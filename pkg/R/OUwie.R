@@ -11,6 +11,7 @@
 
 OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, ip=1, lb=0.000001, ub=1000, clade=NULL, mserr=FALSE, diagn=TRUE, quiet=FALSE){
 	
+	phy<<-phy
 	#Makes sure the data is in the same order as the tip labels
 	if(mserr==FALSE){
 		data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -148,6 +149,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			param.count<-np+1
 			bool=TRUE
 		}
+		#The group mean model of Thomas et al, is trivial: set bool to be TRUE:
 		if (model == "BMS"){
 			np=k
 			index<-matrix(TRUE,2,k)
@@ -162,7 +164,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			index.mat[1,1:k]<-1
 			index.mat[2,1:k]<-2
 			if(root.station==TRUE){
-			param.count<-np+k
+				param.count<-np+k
 			}
 			if(root.station==FALSE){
 				param.count<-np+k+1
@@ -398,7 +400,7 @@ print.OUwie<-function(x, ...){
 					colnames(theta.mat)<-c("Root", levels(x$tot.states))
 				}
 				if(x$simmap.tree==TRUE){
-					colnames(theta.mat)<-c("Root", colnames(phy$mapped.edge))
+					colnames(theta.mat)<-c("Root", colnames(x$phy$mapped.edge))
 				}
 				cat("\nRates\n")
 				print(param.est)
