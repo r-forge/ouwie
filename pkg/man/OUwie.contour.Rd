@@ -37,6 +37,7 @@ The pair of parameters to examine is passed by focal.param. For example, to do a
 This returns a data.frame with the first two columns being the values of the points examined and the third column the loglik of those points. The last row contains the MLE.
 
 IMPORTANT: this currently written to only do sigma.sq and/or alpha, not theta.
+IMPORTANT II: this function requires the package akima.
 }
 \value{
 \item{finalResults}{the parameter values and loglik}

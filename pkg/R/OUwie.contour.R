@@ -1,5 +1,7 @@
 #Does contour plot for likelihood surface for pair of parameters
-
+library(akima)
+library(lattice)
+library(grDevices)
 #written by Brian C. OMeara
 
 OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, focal.param=NULL, clade=NULL, mserr="none", nrep=1000, sd.mult=3, levels=c(0.5,1,1.5,2),likelihood.boundary=Inf,lwd=2, ...){
@@ -15,8 +17,8 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 	names(focal.param.df)<-c(1,2)
 	focal.param.df<-rbind(focal.param.df,rep(NA,2))
 	focal.param.df<-rbind(focal.param.df,rep(NA,2))
-	row.names(focal.param.df)<-c("parameter","element","MLE","SE")
 
+	row.names(focal.param.df)<-c("parameter","element","MLE","SE")
 	for (i in 1:2) {
 		focal.param.df[3,i]<-as.numeric(globalMLE$solution[which(row.names(globalMLE$solution)==focal.param.df[1,i]),focal.param.df[2,i]])
 		focal.param.df[4,i]<-as.numeric(globalMLE$solution.se[which(row.names(globalMLE$solution.se)==focal.param.df[1,i]),focal.param.df[2,i]])
@@ -86,7 +88,8 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 				}
 			}
 		}
-		loglik<-OUwie.fixed(phy=phy,data=data, model=model,simmap.tree=simmap.tree,scaleHeight=scaleHeight,root.station=root.station,alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade, mserr=mserr)$loglik
+		loglik=Inf
+		try(loglik<-OUwie.fixed(phy=phy,data=data, model=model,simmap.tree=simmap.tree,scaleHeight=scaleHeight,root.station=root.station,alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade, mserr=mserr)$loglik)
 		if(loglik==Inf){
 			loglik=-10000000
 		}
