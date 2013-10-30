@@ -5,7 +5,7 @@
 \usage{
 OUwie(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"),
  simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, 
-ub=1000, clade=NULL, mserr="none", diagn=TRUE, quiet=FALSE)
+ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes.}
@@ -18,7 +18,7 @@ ub=1000, clade=NULL, mserr="none", diagn=TRUE, quiet=FALSE)
 \item{ub}{upper bound for the likelihood search. The default is \code{ub=1000}.}
 \item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
 \item{mserr}{designates whether a fourth column in the data matrix contains measurement error for each species value ("known"). The measurement error is assumed to be the standard error of the species mean. The default is "none".}
-\item{diagn}{a logical indicating whether the full diagnostic analysis should be carried out. The default is \code{TRUE}.}
+\item{diagn}{a logical indicating whether the full diagnostic analysis should be carried out. The default is \code{FALSE}.}
 \item{quiet}{a logical indicating whether progress should be written to the screen. The default is \code{FALSE}.}
 }
 \details{

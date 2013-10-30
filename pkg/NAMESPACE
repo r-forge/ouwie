@@ -1,6 +1,5 @@
-export(OUwie,OUwie.sim,OUwie.fixed,OUwie.contour)
+export(OUwie,OUwie.sim,OUwie.fixed)
 import(ape,nloptr,numDeriv,lattice,grDevices,phytools,phangorn)
 exportClasses('OUwie','OUwie.fixed')
-
 S3method(print, OUwie)
 S3method(print, OUwie.fixed)

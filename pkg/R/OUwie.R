@@ -9,7 +9,7 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA), 
 #and the multiple alphas and sigmas (OUMVA). 
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=TRUE, quiet=FALSE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE){
 	
 	phy<<-phy
 	#Makes sure the data is in the same order as the tip labels
@@ -159,12 +159,12 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				index.mat[1,1:k]<-np+1
 			}
 			index.mat[2,1:k]<-1:np
-#			if(root.station==TRUE){
-#				param.count<-np+k
-#			}
-#			if(root.station==FALSE){
+			if(root.station==TRUE){
+				param.count<-np+k
+			}
+			if(root.station==FALSE){
 				param.count<-np+1
-#			}			
+			}			
 			bool=FALSE
 		}
 		if (model == "OU1"){
@@ -299,6 +299,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		C.mat<-vcv.phylo(phy)
 		a<-as.numeric(colSums(solve(C.mat))%*%x/sum(solve(C.mat)))
 		sig<-as.numeric(t(x-a)%*%solve(C.mat)%*%(x-a)/n)
+		print(sig)
 		#####################
 		if(model=="BMS"){
 			ip=rep(1,k)
@@ -410,12 +411,12 @@ print.OUwie<-function(x, ...){
 	if (is.character(x$model)) {
 		if (x$model == "BM1" | x$model == "BMS"){
 			param.est <- x$solution
-#			if(x$root.station==FALSE){
+			if(x$root.station==FALSE){
 				theta.mat <- matrix(t(x$theta[1,]), 2, length(levels(x$tot.states)))
-#			}
-#			else{
-#				theta.mat<-matrix(t(x$theta), 2, length(levels(x$tot.states)))
-#			}
+			}
+			else{
+				theta.mat<-matrix(t(x$theta), 2, length(levels(x$tot.states)))
+			}
 			rownames(theta.mat)<-c("estimate", "se")
 			if(x$simmap.tree==FALSE){
 				colnames(theta.mat) <- levels(x$tot.states)
