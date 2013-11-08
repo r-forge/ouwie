@@ -23,13 +23,13 @@ b. Brownian motion with different rate parameters for each state on a tree (\cod
 
 c. Ornstein Uhlenbeck with a single optimum for all species (\code{OU1}): alpha=c(0.1,0.1); sigma.sq=c(0.9,0.9); theta0=1; theta=c(1.0,1.0).
 
-d. Ornstein Uhlenbeck model that assumes different state means and a single \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} (\code{OUM}): alpha=c(1.0,1.0); sigma.sq=c(0.45,0.45); theta0=0; theta=c(1.0,2.0).
+d. Ornstein Uhlenbeck model that assumes different state means and a single \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} (\code{OUM}): alpha=c(1.0,1.0); sigma.sq=c(0.45,0.45); theta0=1.0; theta=c(1.0,2.0).
 
-e. Ornstein Uhlenbeck model that assumes different state means and multiple \eqn{\sigma^2}{sigma^2} (\code{OUMV}): alpha=c(1.0,1.0); sigma.sq=c(0.45,0.90); theta0=0; theta=c(1.0,2.0).
+e. Ornstein Uhlenbeck model that assumes different state means and multiple \eqn{\sigma^2}{sigma^2} (\code{OUMV}): alpha=c(1.0,1.0); sigma.sq=c(0.45,0.90); theta0=1.0; theta=c(1.0,2.0).
 
-f. Ornstein Uhlenbeck model that assumes different state means and multiple \eqn{\alpha}{alpha} (\code{OUMA}): alpha=c(1.0,0.5); sigma.sq=c(0.45,0.45); theta0=0; theta=c(1.0,2.0).
+f. Ornstein Uhlenbeck model that assumes different state means and multiple \eqn{\alpha}{alpha} (\code{OUMA}): alpha=c(1.0,0.5); sigma.sq=c(0.45,0.45); theta0=1.0; theta=c(1.0,2.0).
 
-g. Ornstein Uhlenbeck model that assumes different state means and multiple \eqn{\sigma^2}{sigma^2} and \eqn{\alpha}{alpha} (\code{OUMVA}): alpha=c(1.0,0.5); sigma.sq=c(0.45,0.9); theta0=0; theta=c(1.0,2.0).
+g. Ornstein Uhlenbeck model that assumes different state means and multiple \eqn{\sigma^2}{sigma^2} and \eqn{\alpha}{alpha} (\code{OUMVA}): alpha=c(1.0,0.5); sigma.sq=c(0.45,0.9); theta0=1.0; theta=c(1.0,2.0).
 
 }
 \value{
@@ -42,7 +42,7 @@ data(sim.ex)
 #and a separate alpha and sigma^2 per selective regime
 alpha=c(1.0,0.5)
 sigma.sq=c(0.45,0.9)
-theta0=0
+theta0=1.0
 theta=c(1.0,2.0)
 
 sim.data<-OUwie.sim(tree,trait,simmap.tree=FALSE,alpha,sigma.sq,theta0,theta)

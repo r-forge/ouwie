@@ -11,7 +11,6 @@
 
 OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE){
 	
-	phy<<-phy
 	#Makes sure the data is in the same order as the tip labels
 	if(mserr=="none" | mserr=="est"){
 		data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -159,12 +158,12 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 				index.mat[1,1:k]<-np+1
 			}
 			index.mat[2,1:k]<-1:np
-			if(root.station==TRUE){
-				param.count<-np+k
-			}
-			if(root.station==FALSE){
-				param.count<-np+1
-			}			
+#			if(root.station==TRUE){
+#				param.count<-np+k
+#			}
+#			if(root.station==FALSE){
+			param.count<-np+1
+#			}			
 			bool=FALSE
 		}
 		if (model == "OU1"){
@@ -271,13 +270,17 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
 	
 	if(model == "OU1" | model == "OUM" | model == "OUMV" | model == "OUMA" | model == "OUMVA"){
+		C.mat<-vcv.phylo(phy)
+		a<-as.numeric(colSums(solve(C.mat))%*%x/sum(solve(C.mat)))
+		A<-matrix(rep(a,nrow(x)),nrow(x),ncol(x), byrow=TRUE)
+		sig<-as.numeric(t(x-A)%*%solve(C.mat)%*%(x-A)/n)		
 		init.np=2
 		init.lower = rep(lb, init.np)
 		init.upper = rep(ub, init.np)
 		init.index.mat<-matrix(0,2,k)
 		init.index.mat[1,1:k]<-1
 		init.index.mat[2,1:k]<-2
-		init <- nloptr(x0=rep(1, length.out = init.np), eval_f=dev, lb=init.lower, ub=init.upper, opts=opts, index.mat=init.index.mat, mserr="none")
+		init <- nloptr(x0=rep(sig, length.out = init.np), eval_f=dev, lb=init.lower, ub=init.upper, opts=opts, index.mat=init.index.mat, mserr="none")
 		init.ip <- c(init$solution[1],init$solution[2])
 
 		if(model=="OU1"){
@@ -290,19 +293,21 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			ip<-c(ip,0)
 			lower = c(lower,0)
 			upper = c(upper,ub)
+		}		
+		if(quiet==FALSE){
+			cat("Finished. Begin thorough search...", "\n")
 		}
-		cat("Finished. Begin thorough search...", "\n")
 		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, mserr=mserr)
 	}
 	else{
 		#Starting values follow from phytools:
 		C.mat<-vcv.phylo(phy)
 		a<-as.numeric(colSums(solve(C.mat))%*%x/sum(solve(C.mat)))
-		sig<-as.numeric(t(x-a)%*%solve(C.mat)%*%(x-a)/n)
-		print(sig)
+		A<-matrix(rep(a,nrow(x)),nrow(x),ncol(x), byrow=TRUE)
+		sig<-as.numeric(t(x-A)%*%solve(C.mat)%*%(x-A)/n)
 		#####################
 		if(model=="BMS"){
-			ip=rep(1,k)
+			ip=rep(sig,k)
 		}
 		else{
 			ip=sig
@@ -312,7 +317,9 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			lower = c(lower,0)
 			upper = c(upper,10)
 		}
-		cat("Finished. Begin thorough search...", "\n")
+		if(quiet==FALSE){
+			cat("Finished. Begin thorough search...", "\n")
+		}
 		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, mserr=mserr)
 	}
 	
@@ -411,12 +418,12 @@ print.OUwie<-function(x, ...){
 	if (is.character(x$model)) {
 		if (x$model == "BM1" | x$model == "BMS"){
 			param.est <- x$solution
-			if(x$root.station==FALSE){
-				theta.mat <- matrix(t(x$theta[1,]), 2, length(levels(x$tot.states)))
-			}
-			else{
-				theta.mat<-matrix(t(x$theta), 2, length(levels(x$tot.states)))
-			}
+#			if(x$root.station==FALSE){
+			theta.mat <- matrix(t(x$theta[1,]), 2, length(levels(x$tot.states)))
+#			}
+#			else{
+#				theta.mat<-matrix(t(x$theta), 2, length(levels(x$tot.states)))
+#			}
 			rownames(theta.mat)<-c("estimate", "se")
 			if(x$simmap.tree==FALSE){
 				colnames(theta.mat) <- levels(x$tot.states)
