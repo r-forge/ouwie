@@ -10,7 +10,6 @@
 #and the multiple alphas and sigmas (OUMVA). 
 
 OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE){
-	
 	#Makes sure the data is in the same order as the tip labels
 	if(mserr=="none" | mserr=="est"){
 		data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -273,7 +272,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		C.mat<-vcv.phylo(phy)
 		a<-as.numeric(colSums(solve(C.mat))%*%x/sum(solve(C.mat)))
 		A<-matrix(rep(a,nrow(x)),nrow(x),ncol(x), byrow=TRUE)
-		sig<-as.numeric(t(x-A)%*%solve(C.mat)%*%(x-A)/n)		
+		sig<-as.numeric(t(x-A)%*%solve(C.mat)%*%(x-A)/n)
 		init.np=2
 		init.lower = rep(lb, init.np)
 		init.upper = rep(ub, init.np)
