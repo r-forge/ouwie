@@ -232,14 +232,12 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	}
 	Rate.mat <- matrix(1, 2, k)
 	#Likelihood function for estimating model parameters
-	dev<-function(p, index.mat, mserr){
-		
+	dev<-function(p, index.mat, edges, mserr){
 		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N<-length(x[,1])
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
 		if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)		
-		
 		if(mserr=="known"){
 			diag(V)<-diag(V)+data[,3]
 		}
@@ -269,19 +267,28 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
 	
 	if(model == "OU1" | model == "OUM" | model == "OUMV" | model == "OUMA" | model == "OUMVA"){
+		if(scaleHeight==TRUE){
+			d <- max(diag(vcv.phylo(phy)))
+			phy$edge.length<-(phy$edge.length/d)
+		}
 		C.mat<-vcv.phylo(phy)
 		a<-as.numeric(colSums(solve(C.mat))%*%x/sum(solve(C.mat)))
-		A<-matrix(rep(a,nrow(x)),nrow(x),ncol(x), byrow=TRUE)
-		sig<-as.numeric(t(x-A)%*%solve(C.mat)%*%(x-A)/n)
+		sig<-as.numeric(t(x-a)%*%solve(C.mat)%*%(x-a)/n)
 		init.np=2
 		init.lower = rep(lb, init.np)
 		init.upper = rep(ub, init.np)
 		init.index.mat<-matrix(0,2,k)
 		init.index.mat[1,1:k]<-1
 		init.index.mat[2,1:k]<-2
-		init <- nloptr(x0=rep(sig, length.out = init.np), eval_f=dev, lb=init.lower, ub=init.upper, opts=opts, index.mat=init.index.mat, mserr="none")
+		if(model == "OU1" | model == "OUM"){
+			edges.tmp=edges
+			edges.tmp[,6]<-rep(1, length(edges.tmp[,1]))
+			edges.tmp[,7:(k+5)]<-0
+		}else{
+			edges.tmp=edges
+		}
+		init <- nloptr(x0=rep(sig, length.out = init.np), eval_f=dev, lb=init.lower, ub=init.upper, opts=opts, index.mat=init.index.mat, edges=edges.tmp, mserr="none")
 		init.ip <- c(init$solution[1],init$solution[2])
-
 		if(model=="OU1"){
 			ip=init.ip
 		}
@@ -289,21 +296,24 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			ip<-c(rep(init.ip[1],length(unique(index.mat[1,]))),rep(init.ip[2],length(unique(index.mat[2,]))))
 		}		
 		if(mserr=="est"){
-			ip<-c(ip,0)
+			ip<-c(ip,sig^.5)
 			lower = c(lower,0)
 			upper = c(upper,ub)
 		}		
 		if(quiet==FALSE){
 			cat("Finished. Begin thorough search...", "\n")
 		}
-		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, mserr=mserr)
+		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr)
 	}
 	else{
+		if(scaleHeight==TRUE){
+			d <- max(diag(vcv.phylo(phy)))
+			phy$edge.length<-(phy$edge.length/d)
+		}
 		#Starting values follow from phytools:
 		C.mat<-vcv.phylo(phy)
 		a<-as.numeric(colSums(solve(C.mat))%*%x/sum(solve(C.mat)))
-		A<-matrix(rep(a,nrow(x)),nrow(x),ncol(x), byrow=TRUE)
-		sig<-as.numeric(t(x-A)%*%solve(C.mat)%*%(x-A)/n)
+		sig<-as.numeric(t(x-a)%*%solve(C.mat)%*%(x-a)/n)
 		#####################
 		if(model=="BMS"){
 			ip=rep(sig,k)
@@ -312,27 +322,24 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			ip=sig
 		}
 		if(mserr=="est"){
-			ip<-c(ip,0)
+			ip<-c(ip,sig^.5)
 			lower = c(lower,0)
 			upper = c(upper,10)
 		}
 		if(quiet==FALSE){
 			cat("Finished. Begin thorough search...", "\n")
 		}
-		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, mserr=mserr)
+		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr)
 	}
-	
 	loglik <- -out$objective
 	
 	#Takes estimated parameters from dev and calculates theta for each regime:
-	dev.theta<-function(p, index.mat, mserr=mserr){
-		
+	dev.theta<-function(p, index.mat, edges=edges, mserr=mserr){
 		tmp<-NULL
 		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N<-length(x[,1])
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
-		
 		if(mserr=="known"){
 			diag(V)<-diag(V)+data[,3]
 		}
@@ -354,7 +361,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 	if(quiet==FALSE){
 		cat("Finished. Summarizing results.", "\n")	
 	}
-	theta <- dev.theta(out$solution, index.mat, mserr)
+	theta <- dev.theta(out$solution, index.mat, edges, mserr)
 	#Calculates the Hessian for use in calculating standard errors and whether the maximum likelihood solution was found
 	if(diagn==TRUE){
 		h <- hessian(x=out$solution, func=dev, index.mat=index.mat, mserr=mserr)
@@ -366,7 +373,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			colnames(solution) <- colnames(solution.se) <- levels(tot.states)
 		}
 		if(simmap.tree==TRUE){
-			colnames(solution) <- colnames(solution.se) <- colnames(phy$mapped.edge)
+			colnames(solution) <- colnames(solution.se) <- c(colnames(x$phy$mapped.edge))
 		}				
 		#Eigendecomposition of the Hessian to assess reliability of likelihood estimates
 		hess.eig<-eigen(h,symmetric=TRUE)
@@ -390,7 +397,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			colnames(solution) <- levels(tot.states)
 		}
 		if(simmap.tree==TRUE){
-			colnames(solution) <- colnames(phy$mapped.edge)
+			colnames(solution) <- c(colnames(x$phy$mapped.edge))
 		}
 		if(mserr=="est"){
 			mserr.est<-out$solution[length(out$solution)]
@@ -399,7 +406,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		else{
 			mserr.est<-NULL
 		}
-		obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, theta=theta$theta.est, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res) 
+		obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, mserr.est=mserr.est, theta=theta$theta.est, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res) 
 	}
 	class(obj)<-"OUwie"		
 	return(obj)
