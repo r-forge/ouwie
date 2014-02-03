@@ -62,6 +62,7 @@ OUwie.sim <- function(phy, data=NULL, simmap.tree=FALSE, scaleHeight=FALSE, alph
 		oldregime=root.state
 		
 		alpha=alpha
+		alpha[alpha==0] = 1e-10
 		sigma=sqrt(sigma.sq)
 		theta=theta
 
