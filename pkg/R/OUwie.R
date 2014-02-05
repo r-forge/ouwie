@@ -237,6 +237,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		N<-length(x[,1])
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
+		
 		if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)		
 		if(mserr=="known"){
 			diag(V)<-diag(V)+data[,3]
@@ -246,19 +247,18 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		}
 		theta<-Inf
 		try(theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x, silent=TRUE)
-
 		if(any(theta==Inf)){
 			return(10000000)
 		}
-				
-		DET<-determinant(V, logarithm=TRUE)
 		
-		logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
+		#DET<-determinant(V, logarithm=TRUE)
+		#When the values of V get too small, the modulus is not correct and the loglihood becomes unstable. This is my solution:
+		DET <- log(prod(abs(Re(diag(qr(V)$qr)))))
 		
-		if(logl==Inf){
+		logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET)-.5*(N*log(2*pi))
+		if(!is.finite(logl)){
 			return(10000000)
 		}
-
 		return(-logl)
 	}
 	
@@ -298,13 +298,16 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 			edges.tmp=edges
 		}
 		init <- nloptr(x0=rep(sig, length.out = init.np), eval_f=dev, lb=init.lower, ub=init.upper, opts=opts, index.mat=init.index.mat, edges=edges.tmp, mserr="none")
-		init.ip <- c(init$solution[1],init$solution[2])
+		init.ip <- c(init$solution[1], init$solution[2])
 		if(model=="OU1"){
 			ip=init.ip
 		}
-		else{
+		if(model=="OUMV" | model=="OUMA" | model=="OUM"){
 			ip<-c(rep(init.ip[1],length(unique(index.mat[1,]))),rep(init.ip[2],length(unique(index.mat[2,]))))
-		}		
+		}
+		if(model=="OUMVA"){
+			ip<-c(rep(init.ip,k))
+		}
 		if(mserr=="est"){
 			ip<-c(ip,sig^.5)
 			lower = c(lower,0)
