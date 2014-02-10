@@ -236,7 +236,7 @@ OUwie.fixed<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","O
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight,assume.station=bool)
 		if(mserr=="known"){
-			diag(V)<-diag(V)+data[,3]
+			diag(V)<-diag(V)+(data[,3]^2)
 		}
 #		if(mserr=="est"){
 #			diag(V)<-diag(V)+p[length(p)]

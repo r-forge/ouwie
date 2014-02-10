@@ -247,10 +247,10 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		
 		if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)		
 		if(mserr=="known"){
-			diag(V)<-diag(V)+data[,3]
+			diag(V)<-diag(V)+(data[,3]^2)
 		}
 		if(mserr=="est"){
-			diag(V)<-diag(V)+p[length(p)]
+			diag(V)<-diag(V)+(p[length(p)]^2)
 		}
 		theta<-Inf
 		try(theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x, silent=TRUE)
@@ -361,10 +361,10 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
 		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
 		if(mserr=="known"){
-			diag(V)<-diag(V)+data[,3]
+			diag(V)<-diag(V)+(data[,3]^2)
 		}
 		if(mserr=="est"){
-			diag(V)<-diag(V)+p[length(p)]
+			diag(V)<-diag(V)+(p[length(p)]^2)
 		}
 		theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x
 		#Calculates the hat matrix:
