@@ -17,7 +17,6 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 	names(focal.param.df)<-c(1,2)
 	focal.param.df<-rbind(focal.param.df,rep(NA,2))
 	focal.param.df<-rbind(focal.param.df,rep(NA,2))
-
 	row.names(focal.param.df)<-c("parameter","element","MLE","SE")
 	for (i in 1:2) {
 		focal.param.df[3,i]<-as.numeric(globalMLE$solution[which(row.names(globalMLE$solution)==focal.param.df[1,i]),focal.param.df[2,i]])
