@@ -12,7 +12,7 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 	if(sum(grepl("theta",focal.param))>0) {
 		stop("contour mapping currently only works for alpha and sigma.sq parameters") 
 	}
-	globalMLE<-OUwie(phy=phy,data=data,model=model,simmap.tree=simmap.tree,scaleHeight=scaleHeight,root.station=root.station,lb=lb, ub=ub, clade=clade, mserr=mserr)
+	globalMLE<-OUwie(phy=phy,data=data,model=model,simmap.tree=simmap.tree,scaleHeight=scaleHeight,root.station=root.station,lb=lb, ub=ub, clade=clade, mserr=mserr, diagn=TRUE)
 	focal.param.df<-data.frame(strsplit(focal.param,"_"),stringsAsFactors=FALSE)
 	names(focal.param.df)<-c(1,2)
 	focal.param.df<-rbind(focal.param.df,rep(NA,2))
@@ -88,7 +88,7 @@ OUwie.contour<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA",
 			}
 		}
 		loglik=Inf
-		try(loglik<-OUwie.fixed(phy=phy,data=data, model=model,simmap.tree=simmap.tree,scaleHeight=scaleHeight,root.station=root.station,alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade, mserr=mserr)$loglik)
+		try(loglik<-OUwie.fixed(phy=phy,data=data, model=model,simmap.tree=simmap.tree,scaleHeight=scaleHeight,root.station=root.station,alpha=alpha, sigma.sq=sigma.sq, theta=NULL, clade=clade, mserr=mserr, diagn=TRUE)$loglik)
 		if(loglik==Inf){
 			loglik=-10000000
 		}
