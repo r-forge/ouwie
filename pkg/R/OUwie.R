@@ -233,7 +233,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 
 	if(warn==TRUE){
 		if(param.count > (ntips/10)){
-			warning("It's likely you do not have enough data to fit this model well", call.=FALSE, immediate.=TRUE)
+			warning("You might not have enough data to fit this model well", call.=FALSE, immediate.=TRUE)
 		}
 	}
 	
