@@ -256,11 +256,23 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		if(any(theta==Inf)){
 			return(10000000)
 		}
+
+#		#Uses multivariate normal rather than calculates logl on its own - faster but often returns errors:
+#		logl<-Inf
+#		try(logl <- dmvnorm(c(x), W%*%theta, V, log=TRUE), silent=TRUE)
+#		if(any(theta==Inf)){
+#			return(10000000)
+#		}		
 		
-		#DET<-determinant(V, logarithm=TRUE)
-		#When the values of V get too small, the modulus is not correct and the loglihood becomes unstable. This is my solution:
-		DET <- log(prod(abs(Re(diag(qr(V)$qr)))))
-		logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET)-.5*(N*log(2*pi))
+		#When the model includes alpha, the values of V can get too small, the modulus does not seem correct and the loglik becomes unstable. This is one solution:
+		DET <- sum(log(abs(Re(diag(qr(V)$qr)))))
+		#However, sometimes this fails (not sure yet why so I just toggle between this and another approach:
+		if(!is.finite(DET)){
+			DET<-determinant(V, logarithm=TRUE)
+			logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
+		}else{
+			logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET)-.5*(N*log(2*pi))
+		}
 		if(!is.finite(logl)){
 			return(10000000)
 		}
