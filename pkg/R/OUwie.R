@@ -266,7 +266,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA")
 		
 		#When the model includes alpha, the values of V can get too small, the modulus does not seem correct and the loglik becomes unstable. This is one solution:
 		DET <- sum(log(abs(Re(diag(qr(V)$qr)))))
-		#However, sometimes this fails (not sure yet why so I just toggle between this and another approach:
+		#However, sometimes this fails (not sure yet why) so I just toggle between this and another approach:
 		if(!is.finite(DET)){
 			DET<-determinant(V, logarithm=TRUE)
 			logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
@@ -515,15 +515,14 @@ print.OUwie<-function(x, ...){
 		}
 		if (x$root.station == FALSE){
 			if (x$model == "OUM"| x$model == "OUMV"| x$model == "OUMA" | x$model == "OUMVA"){ 
-				print(x$theta)
 				param.est<- x$solution
 				theta.mat<-matrix(t(x$theta), 2, length(levels(x$tot.states))+1)
 				rownames(theta.mat)<-c("estimate", "se")
 				if(x$simmap.tree==FALSE){
-					colnames(theta.mat)<-c("Root", levels(x$tot.states))
+					colnames(theta.mat)<-c("root", levels(x$tot.states))
 				}
 				if(x$simmap.tree==TRUE){
-					colnames(theta.mat)<-c("Root", colnames(x$phy$mapped.edge))
+					colnames(theta.mat)<-c("root", colnames(x$phy$mapped.edge))
 				}
 				cat("\nRates\n")
 				print(param.est)
