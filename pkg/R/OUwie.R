@@ -128,11 +128,16 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		#Resort the edge matrix so that it looks like the original matrix order
 		edges=edges[sort.list(edges[,1]),]
 	}
+	
+	#Initializes an integer specifying whether or not the trendy model is to be invoked. Assume 0, unless otherwise stated later:
+	trendy=0
+	#Data:
 	x<-as.matrix(data[,2])
+	
 	#Matches the model with the appropriate parameter matrix structure
 	if (is.character(model)) {
 		index.mat<-matrix(0,2,k)
-		
+		Rate.mat <- matrix(1, 2, k)
 		if (model == "BM1"){
 			np=1
 			index<-matrix(TRUE,2,k)
@@ -229,6 +234,40 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 			}
 			bool=root.station
 		}
+		if (model == "TrendyM"){
+			index.mat<-matrix(0,3,k)
+			Rate.mat <- matrix(1, 3, k)
+			np=k+2 #We have k regimes, but 1 sigma, plus the root value
+			index<-matrix(TRUE,3,k)
+			if(mserr=="est"){
+				index.mat[1,1:k]<-np+2
+			}
+			else{
+				index.mat[1,1:k]<-np+1				
+			}
+			index.mat[2,1:k]<-1
+			index.mat[3,1:k]<-2:(np-1)
+			param.count<-np
+			bool=TRUE
+			trendy=1
+		}
+		if (model == "TrendyMS"){
+			index.mat<-matrix(0,3,k)
+			Rate.mat <- matrix(1, 3, k)
+			np= (k*2)+1 #We have k regimes and assume k trends and k sigmas, plus the root value
+			index<-matrix(TRUE,3,k)
+			if(mserr=="est"){
+				index.mat[1,1:k]<-np+2
+			}
+			else{
+				index.mat[1,1:k]<-np+1
+			}
+			index.mat[2,1:k]<-1:k
+			index.mat[3,1:k]<-(k+1):(np-1)
+			param.count<-np
+			bool=FALSE
+			trendy=1
+		}
 	}
 
 	if(warn==TRUE){
@@ -236,25 +275,51 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 			warning("You might not have enough data to fit this model well", call.=FALSE, immediate.=TRUE)
 		}
 	}
-	
-	Rate.mat <- matrix(1, 2, k)
 	#Likelihood function for estimating model parameters
-	dev<-function(p, index.mat, edges, mserr){
+	dev<-function(p, index.mat, edges, mserr, trendy){
+				
 		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N<-length(x[,1])
+		root.par.index=length(p)
+		
 		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
-		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
 		if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)		
 		if(mserr=="known"){
 			diag(V)<-diag(V)+(data[,3]^2)
 		}
 		if(mserr=="est"){
+			root.par.index=length(p) - 1
 			diag(V)<-diag(V)+(p[length(p)])
 		}
-		theta<-Inf
-		try(theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x, silent=TRUE)
-		if(any(theta==Inf)){
-			return(10000000)
+		if(trendy == 0){
+			W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
+			theta<-Inf
+			try(theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x, silent=TRUE)
+			if(any(theta==Inf)){
+				return(10000000)
+			}
+			DET <- sum(log(abs(Re(diag(qr(V)$qr)))))
+			#However, sometimes this fails (not sure yet why) so I just toggle between this and another approach:
+			if(!is.finite(DET)){
+				DET <- determinant(V, logarithm=TRUE)
+				logl <- -.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
+			}else{
+				logl <- -.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET)-.5*(N*log(2*pi))
+			}
+		}else{
+			E_a<-Inf
+			try(E_a <- expected.trendy(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, root.value=p[root.par.index]))
+			if(any(E_a==Inf)){
+				return(10000000)
+			}
+			DET <- sum(log(abs(Re(diag(qr(V)$qr)))))
+			#However, sometimes this fails (not sure yet why) so I just toggle between this and another approach:
+			if(!is.finite(DET)){
+				DET <- determinant(V, logarithm=TRUE)
+				logl <- -.5*(t(E_a-x)%*%pseudoinverse(V)%*%(E_a-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
+			}else{
+				logl <- -.5*(t(E_a-x)%*%pseudoinverse(V)%*%(E_a-x))-.5*as.numeric(DET)-.5*(N*log(2*pi))
+			}
 		}
 
 #		#Uses multivariate normal rather than calculates logl on its own - faster but often returns errors:
@@ -265,14 +330,6 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 #		}		
 		
 		#When the model includes alpha, the values of V can get too small, the modulus does not seem correct and the loglik becomes unstable. This is one solution:
-		DET <- sum(log(abs(Re(diag(qr(V)$qr)))))
-		#However, sometimes this fails (not sure yet why) so I just toggle between this and another approach:
-		if(!is.finite(DET)){
-			DET<-determinant(V, logarithm=TRUE)
-			logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET$modulus)-.5*(N*log(2*pi))
-		}else{
-			logl<--.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET)-.5*(N*log(2*pi))
-		}
 		if(!is.finite(logl)){
 			return(10000000)
 		}
@@ -315,7 +372,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 			edges.tmp=edges
 		}
 		#Initial value for alpha is just the half life based on the entire length of the tree:
-		init <- nloptr(x0=c(log(2)/max(branching.times(phy)),sig), eval_f=dev, lb=init.lower, ub=init.upper, opts=opts, index.mat=init.index.mat, edges=edges.tmp, mserr=mserr)
+		init <- nloptr(x0=c(log(2)/max(branching.times(phy)),sig), eval_f=dev, lb=init.lower, ub=init.upper, opts=opts, index.mat=init.index.mat, edges=edges.tmp, mserr=mserr, trendy=trendy)
 		init.ip <- c(init$solution[1], init$solution[2])
 		if(model=="OU1"){
 			ip=init.ip
@@ -334,7 +391,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		if(quiet==FALSE){
 			cat("Finished. Begin thorough search...", "\n")
 		}
-		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr)
+		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr, trendy=trendy)
 	}
 	else{
 		if(scaleHeight==TRUE){
@@ -350,7 +407,21 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 			ip=rep(sig,k)
 		}
 		else{
-			ip=sig
+			if(model=="BM1"){
+				ip=sig
+			}
+			if(model=="TrendyM"){
+				#We assume that the starting trend values are zero:
+				ip=c(sig, rep(0, param.count-2), a)
+				lower = c(lb,rep(0, param.count-2), -1e6)
+				upper = c(ub,rep(1e6, param.count-2), 1e6)
+			}
+			if(model == "TrendyMS"){
+				#We assume that the starting trend values are zero:
+				ip=c(rep(sig, k), rep(0, (np-1) - k), a)
+				lower = c(rep(lb,k),rep(0, (np-1) - k), -1e6)
+				upper = c(rep(ub,k),rep(1e6, (np-1) - k), 1e6)
+			}
 		}
 		if(mserr=="est"){
 			ip<-c(ip,sig)
@@ -360,7 +431,8 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		if(quiet==FALSE){
 			cat("Finished. Begin thorough search...", "\n")
 		}
-		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr)
+		
+		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr, trendy=trendy)
 	}
 	loglik <- -out$objective
 	
@@ -388,11 +460,24 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		#Returns final GLS solution
 		tmp
 	}
+	
 	#Informs the user that the summarization has begun, output model-dependent and dependent on whether the root theta is to be estimated
 	if(quiet==FALSE){
 		cat("Finished. Summarizing results.", "\n")	
 	}
-	theta <- dev.theta(out$solution, index.mat, edges, mserr)
+	
+	if(model == "TrendyM" | model == "TrendyMS"){
+		theta<-NULL
+		root.est <- out$solution[length(out$solution)]
+		theta$theta.est <- matrix(root.est, k+1, 2)
+		theta$theta.est[,2] <- 0 
+		theta$res <- x - expected.trendy(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, root.value=root.est)
+	}else{
+		theta <- dev.theta(out$solution, index.mat, edges, mserr)
+		print(theta$theta.est)
+		print(dim(theta$theta.est))
+	}
+	
 	#Calculates the Hessian for use in calculating standard errors and whether the maximum likelihood solution was found
 	if(diagn==TRUE){
 		h <- hessian(x=out$solution, func=dev, index.mat=index.mat, edges=edges, mserr=mserr)
@@ -423,7 +508,11 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 	}
 	if(diagn==FALSE){
 		solution<-matrix(out$solution[index.mat], dim(index.mat))
-		rownames(solution) <- rownames(index.mat) <- c("alpha","sigma.sq")
+		if(model=="TrendyM" | model=="TrendyMS"){
+			rownames(solution) <- rownames(index.mat) <- c("alpha","sigma.sq","trend")
+		}else{
+			rownames(solution) <- rownames(index.mat) <- c("alpha","sigma.sq")
+		}
 		if(simmap.tree==FALSE){
 			colnames(solution) <- levels(tot.states)
 		}
@@ -453,7 +542,7 @@ print.OUwie<-function(x, ...){
 	cat("\n")
 	
 	if (is.character(x$model)) {
-		if (x$model == "BM1" | x$model == "BMS"){
+		if (x$model == "BM1" | x$model == "BMS" | x$model == "TrendyM" | x$model == "TrendyMS"){
 			param.est <- x$solution
 #			if(x$root.station==FALSE){
 			theta.mat <- matrix(t(x$theta[1,]), 2, length(levels(x$tot.states)))
@@ -531,7 +620,7 @@ print.OUwie<-function(x, ...){
 				print(theta.mat)
 				cat("\n")
 			}
-		}		
+		}
 	}
 	if(any(x$eigval<0)){
 		index.matrix <- x$index.mat
