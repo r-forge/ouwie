@@ -24,6 +24,7 @@ expected.trendy<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, s
 	
 	#Parameters:
 	alpha=Rate.mat[1,]
+	sigma=Rate.mat[2,]
 	trend=Rate.mat[3,]
 	
 	E <- matrix(0,ntips,k)

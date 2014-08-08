@@ -413,13 +413,13 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 			if(model=="TrendyM"){
 				#We assume that the starting trend values are zero:
 				ip=c(sig, rep(0, param.count-2), a)
-				lower = c(lb,rep(0, param.count-2), -1e6)
+				lower = c(lb,rep(-1e6, param.count-2), -1e6)
 				upper = c(ub,rep(1e6, param.count-2), 1e6)
 			}
 			if(model == "TrendyMS"){
 				#We assume that the starting trend values are zero:
 				ip=c(rep(sig, k), rep(0, (np-1) - k), a)
-				lower = c(rep(lb,k),rep(0, (np-1) - k), -1e6)
+				lower = c(rep(lb,k),rep(-1e6, (np-1) - k), -1e6)
 				upper = c(rep(ub,k),rep(1e6, (np-1) - k), 1e6)
 			}
 		}
