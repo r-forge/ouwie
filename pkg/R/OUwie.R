@@ -9,7 +9,7 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA), 
 #and the multiple alphas and sigmas (OUMVA). 
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE, warn=TRUE){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA", "TrendyM", "TrendyMS"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE, warn=TRUE){
 	#Makes sure the data is in the same order as the tip labels
 	if(mserr=="none" | mserr=="est"){
 		data<-data.frame(data[,2], data[,3], row.names=data[,1])
