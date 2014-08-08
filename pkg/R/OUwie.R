@@ -307,7 +307,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 				logl <- -.5*(t(W%*%theta-x)%*%pseudoinverse(V)%*%(W%*%theta-x))-.5*as.numeric(DET)-.5*(N*log(2*pi))
 			}
 		}else{
-			E_a<-Inf
+			E_a <- Inf
 			try(E_a <- expected.trendy(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, root.value=p[root.par.index]))
 			if(any(E_a==Inf)){
 				return(10000000)
@@ -471,7 +471,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		root.est <- out$solution[length(out$solution)]
 		theta$theta.est <- matrix(root.est, k+1, 2)
 		theta$theta.est[,2] <- 0 
-		theta$res <- x - expected.trendy(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, root.value=root.est)
+		theta$res <- expected.trendy(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, root.value=root.est) - x
 	}else{
 		theta <- dev.theta(out$solution, index.mat, edges, mserr)
 		print(theta$theta.est)
