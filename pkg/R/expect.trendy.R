@@ -1,4 +1,4 @@
-#Weight matrix generator taken from Butler and King (2004) and modified to allow multiple alpha parameters
+#Expected value generator for the TrendyM and TrendMS models
 
 #written by Jeremy M. Beaulieu
 
