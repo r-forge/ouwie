@@ -2,7 +2,8 @@
 
 #written by Jeremy M. Beaulieu
 
-weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleHeight=FALSE, assume.station=TRUE){
+#standardizeRowSums=TRUE argument used to help pass unscaled one to the weight.mat.network function
+weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleHeight=FALSE, assume.station=TRUE, standardizeRowSums=TRUE){
 	
 	n=max(phy$edge[,1])
 	ntips=length(phy$tip.label)
@@ -173,7 +174,9 @@ weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleH
 		
 	}
 	#Restandardizes W so that the rows sum to 1 -- Generalized. Will reduce to the simpler model if assuming 1 alpha parameter
-	W<-W/rowSums(W)
+	if (standardizeRowSums) {
+		W<-W/rowSums(W)
+	}
 	W
 }
 
