@@ -23,7 +23,9 @@
 #donor	recipient	m	time.from.root.donor	time.from.root.recipient
 #C,D,E	A,B			0.2	14.5					14.5
 
-OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA", "TrendyM", "TrendyMS"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE, warn=TRUE, flow=NULL){
+OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA", "TrendyM", "TrendyMS"), simmap.tree=FALSE, scaleHeight=FALSE, root.station=TRUE, lb=0.000001, ub=1000, clade=NULL, mserr="none", diagn=FALSE, quiet=FALSE, warn=TRUE, flow=NULL, scaling.by.sd=1, force.hybrid.alpha=FALSE, force.hybrid.sigma=FALSE, vh=0, bt=1){
+	vh.free <- is.null(vh)
+	bt.free <- is.null(bt)
 	#Makes sure the data is in the same order as the tip labels
 	if(mserr=="none" | mserr=="est"){
 		data<-data.frame(data[,2], data[,3], row.names=data[,1])
@@ -291,12 +293,25 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 	}
 	#Likelihood function for estimating model parameters
 	dev<-function(p, index.mat, edges, mserr, trendy){
-				
+		if(!is.null(flow)) {
+			if(is.null(bt)) {
+				bt<-p[length(p)] #since bt is added last in the order
+				p<-p[-length(p)] #now pop it off
+			}
+			if(is.null(vh)) {
+				vh<-p[length(p)] #now vh is the last one (whether or not bt was estimated)
+				p<-p[-length(p)] #now pop it off
+			}
+		}
 		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N<-length(x[,1])
 		root.par.index=length(p)
-		
-		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
+		V<-matrix()
+		if(is.null(flow)) {
+			V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
+		} else {
+			V<-varcov.network(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, flow=flow, scaling.by.sd=scaling.by.sd, force.hybrid.alpha=force.hybrid.alpha, force.hybrid.sigma=force.hybrid.sigma, vh=vh, bt=bt)
+		}
 		if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)		
 		if(mserr=="known"){
 			diag(V)<-diag(V)+(data[,3]^2)
@@ -306,7 +321,12 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 			diag(V)<-diag(V)+(p[length(p)])
 		}
 		if(trendy == 0){
-			W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
+			W<-matrix()
+			if(is.null(flow)) {
+				W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
+			} else {
+				W<-weight.mat.network(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool,flow=flow, scaling.by.sd=scaling.by.sd, force.hybrid.alpha=force.hybrid.alpha, force.hybrid.sigma=force.hybrid.sigma, vh=vh, bt=bt)
+			}
 			theta<-Inf
 			try(theta<-pseudoinverse(t(W)%*%pseudoinverse(V)%*%W)%*%t(W)%*%pseudoinverse(V)%*%x, silent=TRUE)
 			if(any(theta==Inf)){
@@ -405,6 +425,15 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		if(quiet==FALSE){
 			cat("Finished. Begin thorough search...", "\n")
 		}
+		if(is.null(vh) && !is.null(flow)) {
+			ip<-append(ip, 0) #need to optimize vh
+			lower = c(lower, 0)
+			upper = c(upper, ub)
+		}
+		if(is.null(bt) && !is.null(flow)) {
+			stop("Having a free beta is not supported for OU models; we suggest painting on a different regime for hybrids instead")
+		}
+
 		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr, trendy=trendy)
 	}
 	else{
@@ -419,10 +448,14 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		#####################
 		if(model=="BMS"){
 			ip=rep(sig,k)
+			if(!is.null(flow)) {
+				stop("Sorry, network models not yet implemented for BMS. Approve our next NSF grant")
+			}
 		}
 		else{
 			if(model=="BM1"){
 				ip=sig
+				stop("Sorry, network models not yet implemented for BM1. Approve our next NSF grant")
 			}
 			if(model=="TrendyM"){
 				#We assume that the starting trend values are zero:
@@ -445,7 +478,18 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		if(quiet==FALSE){
 			cat("Finished. Begin thorough search...", "\n")
 		}
-		
+
+		if(is.null(vh) && !is.null(flow)) {
+			ip<-append(ip, 0) #need to optimize vh
+			lower = c(lower, 0)
+			upper = c(upper, ub)
+		}
+		if(is.null(bt) && !is.null(flow)) {
+			ip<-append(ip, 1) #need to optimize bt
+			lower = c(lower, -Inf)
+			upper = c(upper, Inf)
+		}
+
 		out = nloptr(x0=ip, eval_f=dev, lb=lower, ub=upper, opts=opts, index.mat=index.mat, edges=edges, mserr=mserr, trendy=trendy)
 	}
 	loglik <- -out$objective
@@ -453,10 +497,27 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 	#Takes estimated parameters from dev and calculates theta for each regime:
 	dev.theta<-function(p, index.mat, edges=edges, mserr=mserr){
 		tmp<-NULL
+		if(!is.null(flow)) {
+			if(is.null(bt)) {
+				bt<-p[length(p)] #since bt is added last in the order
+				p<-p[-length(p)] #now pop it off
+			}
+			if(is.null(vh)) {
+				vh<-p[length(p)] #now vh is the last one (whether or not bt was estimated)
+				p<-p[-length(p)] #now pop it off
+			}
+		}
 		Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N<-length(x[,1])
-		V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
-		W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
+		V<-matrix()
+		W<-matrix()
+		if(is.null(flow)) {
+			V<-varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight)
+			W<-weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool)
+		} else {
+			V<-varcov.network(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, flow=flow, scaling.by.sd=scaling.by.sd, force.hybrid.alpha=force.hybrid.alpha, force.hybrid.sigma=force.hybrid.sigma, vh=vh, bt=bt)
+			W<-weight.mat.network(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=bool,flow=flow, scaling.by.sd=scaling.by.sd, force.hybrid.alpha=force.hybrid.alpha, force.hybrid.sigma=force.hybrid.sigma, vh=vh, bt=bt)
+		}
 		if(mserr=="known"){
 			diag(V)<-diag(V)+(data[,3]^2)
 		}
@@ -517,6 +578,14 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		else{
 			mserr.est<-NULL
 		}		
+		
+		if(is.null(vh) && !is.null(flow)) {
+			param.count<-param.count+1
+		}
+		if(is.null(bt) && !is.null(flow)) {
+			param.count<-param.count+1
+		}
+
 		obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, mserr.est=mserr.est, theta=theta$theta.est, solution.se=solution.se, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res, eigval=eigval, eigvect=eigvect) 
 		
 	}
@@ -540,14 +609,32 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 		else{
 			mserr.est<-NULL
 		}
-		obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, mserr.est=mserr.est, theta=theta$theta.est, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res) 
+		
+		if(is.null(vh) && !is.null(flow)) {
+			param.count<-param.count+1
+		}
+		if(is.null(bt) && !is.null(flow)) {
+			param.count<-param.count+1
+		}
+
+		obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, mserr.est=mserr.est, theta=theta$theta.est, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res, flow=flow, vh=vh, bt=bt, vh.free=vh.free, bt.free=bt.free) 
 	}
 	class(obj)<-"OUwie"		
 	return(obj)
 }
 
 print.OUwie<-function(x, ...){
-	
+	if(!is.null(x$flow)) {
+		if(x$bt.free) {
+			x$beta.estimate <- x$solution[length(x$solution)]
+			x$solution <- x$solution[-length(x$solution)]
+		} 
+		if(x$vh.free) {
+			x$vh.estimate <- x$solution[length(x$solution)]
+			x$solution <- x$solution[-length(x$solution)]
+		} 
+
+	}
 	ntips=Ntip(x$phy)
 	output<-data.frame(x$loglik,x$AIC,x$AICc,x$model,ntips, row.names="")
 	names(output)<-c("-lnL","AIC","AICc","model","ntax")
@@ -635,6 +722,25 @@ print.OUwie<-function(x, ...){
 				cat("\n")
 			}
 		}
+	}
+	if(!is.null(x$flow)) {
+		if(x$model == "BM1"| x$model == "BMS") {
+			if(x$bt.free) {
+				cat("\nBeta (estimated)\n")
+				print(x$beta.estimate)
+			} else {
+				cat("\nBeta (fixed)\n")
+				print(x$bt)
+			}
+		}
+		if(x$vh.free) {
+			cat("\nV_h (estimated)\n")
+			print(x$vh.estimate)
+		} else {
+			cat("\nV_h (fixed)\n")
+			print(x$vh)
+		}
+
 	}
 	if(any(x$eigval<0)){
 		index.matrix <- x$index.mat
