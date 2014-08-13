@@ -4,13 +4,11 @@
 
 weight.mat.network<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, scaleHeight=FALSE, assume.station=TRUE, flow, scaling.by.sd=1, force.hybrid.alpha=FALSE, force.hybrid.sigma=FALSE, vh=0, bt=1){
 	W <- weight.mat(phy, edges, Rate.mat, root.state, simmap.tree=simmap.tree, scaleHeight=scaleHeight, assume.station=assume.station, standardizeRowSums=FALSE)
-	print("W")
-	print(head(W))
 	#This gives us weight matrix up main path. Now have to adjust for the hybrid taxa
 	mm<-dim(edges)
 	k<-length(6:mm[2])
 	alpha=Rate.mat[1,]
-	sigma=Rate.mat[2,]
+	sigma.sq=Rate.mat[2,]
 
 
 	for(flow.index in sequence(dim(flow)[1])) {
@@ -51,8 +49,8 @@ weight.mat.network<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE
 		
 		alpha1 <- alpha[parent.1.regime]
 		alpha2 <- alpha[parent.2.regime]
-		sigma1 <- sigma[parent.1.regime]
-		sigma2 <- sigma[parent.2.regime]
+		sigma1 <- sqrt(sigma.sq[parent.1.regime])
+		sigma2 <- sqrt(sigma.sq[parent.2.regime])
 		weights<-GetParentWeights(alpha1, alpha2, sigma1, sigma2, flow$m[flow.index], scaling.by.sd=scaling.by.sd, time.from.root.recipient=flow$time.from.root.recipient[flow.index])
 
 		
@@ -66,7 +64,7 @@ weight.mat.network<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE
 			if(force.hybrid.alpha) {
 				alpha.hybrid<-sum(c(alpha1, alpha2) * weights)
 			}
-			sigma.hybrid <- sigma[hybrid.regime]
+			sigma.hybrid <- sqrt(sigma.sq[hybrid.regime])
 			if(force.hybrid.sigma) {
 				sigma.hybrid<-sum(c(sigma1, sigma2) * weights)
 			}
@@ -77,14 +75,11 @@ weight.mat.network<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE
 			for (regime.index in sequence(dim(W)[2])) {
 				W[hybrid.index, regime.index] <- weights[1] * exp(-full.path.1$alpha) * full.path.1$weights[regime.index] + weights[2] * exp(- (post.hybrid.path.2$alpha + pre.hybrid.path.2$alpha )) * (post.hybrid.path.2$weights[regime.index] + pre.hybrid.path.2$weights[regime.index])
 			}
-			print("weights")		
-			print(cbind(matrix(W.original.row.for.debugging, ncol=1), matrix(W[hybrid.index,], ncol=1)))
 
 		}
 		
 		
 	}
-	print("W modified")
-	print(head(W))
+	W<-W/rowSums(W)
 	return(W)	
 }

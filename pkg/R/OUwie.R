@@ -554,9 +554,15 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 	}
 	
 	#Calculates the Hessian for use in calculating standard errors and whether the maximum likelihood solution was found
+	
 	if(diagn==TRUE){
 		h <- hessian(x=out$solution, func=dev, index.mat=index.mat, edges=edges, mserr=mserr)
 		#Using the corpcor package here to overcome possible NAs with calculating the SE
+		if(vh.free && !is.null(flow)) {
+			vh <- out$solution[length(out$solution)]
+			out$solution <-  out$solution[-length(out$solution)]
+		}
+
 		solution<-matrix(out$solution[index.mat], dim(index.mat))
 		solution.se<-matrix(sqrt(diag(pseudoinverse(h)))[index.mat], dim(index.mat))
 		rownames(solution) <- rownames(solution.se) <- rownames(index.mat) <- c("alpha","sigma.sq")
@@ -586,10 +592,15 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 			param.count<-param.count+1
 		}
 
-		obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, mserr.est=mserr.est, theta=theta$theta.est, solution.se=solution.se, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res, eigval=eigval, eigvect=eigvect) 
+		obj = list(loglik = loglik, AIC = -2*loglik+2*param.count,AICc=-2*loglik+(2*param.count*(ntips/(ntips-param.count-1))),model=model,solution=solution, mserr.est=mserr.est, theta=theta$theta.est, solution.se=solution.se, tot.states=tot.states, index.mat=index.mat, simmap.tree=simmap.tree, opts=opts, data=data, phy=phy, root.station=root.station, lb=lower, ub=upper, iterations=out$iterations, res=theta$res, eigval=eigval, eigvect=eigvect, flow=flow, vh=vh, bt=bt, vh.free=vh.free, bt.free=bt.free) 
 		
 	}
 	if(diagn==FALSE){
+		if(vh.free && !is.null(flow)) {
+			vh <- out$solution[length(out$solution)]
+			out$solution <-  out$solution[-length(out$solution)]
+		}
+
 		solution<-matrix(out$solution[index.mat], dim(index.mat))
 		if(model=="TrendyM" | model=="TrendyMS"){
 			rownames(solution) <- rownames(index.mat) <- c("alpha","sigma.sq","trend")
@@ -624,17 +635,7 @@ OUwie<-function(phy,data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 }
 
 print.OUwie<-function(x, ...){
-	if(!is.null(x$flow)) {
-		if(x$bt.free) {
-			x$beta.estimate <- x$solution[length(x$solution)]
-			x$solution <- x$solution[-length(x$solution)]
-		} 
-		if(x$vh.free) {
-			x$vh.estimate <- x$solution[length(x$solution)]
-			x$solution <- x$solution[-length(x$solution)]
-		} 
 
-	}
 	ntips=Ntip(x$phy)
 	output<-data.frame(x$loglik,x$AIC,x$AICc,x$model,ntips, row.names="")
 	names(output)<-c("-lnL","AIC","AICc","model","ntax")
@@ -735,7 +736,7 @@ print.OUwie<-function(x, ...){
 		}
 		if(x$vh.free) {
 			cat("\nV_h (estimated)\n")
-			print(x$vh.estimate)
+			print(x$vh)
 		} else {
 			cat("\nV_h (fixed)\n")
 			print(x$vh)

@@ -33,7 +33,7 @@ varcov.network<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, sc
 	vcv <- varcov.ou(phy, edges, Rate.mat, root.state, simmap.tree, scaleHeight) #
 	v.modified <- vcv
 	alpha=Rate.mat[1,]
-	sigma=Rate.mat[2,]
+	sigma.sq=Rate.mat[2,]
 	if(is.null(root.state)) {
 		root.state<-which(edges[dim(edges)[1],]==1)-5
 		edges<-edges[-1*dim(edges)[1],]
@@ -81,10 +81,9 @@ varcov.network<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, sc
 		
 		alpha1 <- alpha[parent.1.regime]
 		alpha2 <- alpha[parent.2.regime]
-		sigma1 <- sigma[parent.1.regime]
-		sigma2 <- sigma[parent.2.regime]
+		sigma1 <- sqrt(sigma.sq[parent.1.regime])
+		sigma2 <- sqrt(sigma.sq[parent.2.regime])
 		weights<-GetParentWeights(alpha1, alpha2, sigma1, sigma2, flow$m[flow.index], scaling.by.sd=scaling.by.sd, time.from.root.recipient=flow$time.from.root.recipient[flow.index])
-
 		
 		for (hybrid.local.index in sequence(length(recipient.indices))) {
 			hybrid.index <- recipient.indices[hybrid.local.index]
@@ -93,25 +92,39 @@ varcov.network<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, sc
 			if(force.hybrid.alpha) {
 				alpha.hybrid<-sum(c(alpha1, alpha2) * weights)
 			}
-			sigma.hybrid <- sigma[hybrid.regime]
+			sigma.hybrid <- sqrt(sigma.sq[hybrid.regime])
 			if(force.hybrid.sigma) {
 				sigma.hybrid<-sum(c(sigma1, sigma2) * weights)
 			}
 			
 			for (donor.local.index in sequence(length(donor.indices))) {
 				donor.index <- donor.indices[donor.local.index]
-				alpha.scaling <- exp(- AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = hybrid.index, rootward.node=Ntip(phy)+1, tipward.height = edges[hybrid.index,5], rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)$alpha 
+				alpha.scaling <- exp(- AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = hybrid.index, rootward.node=Ntip(phy)+1, tipward.height = edges[EdgesTipwardNumberToRow(hybrid.index,edges),5], rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)$alpha 
 				- AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = donor.index, rootward.node=Ntip(phy)+1, tipward.height = edges[EdgesTipwardNumberToRow(donor.index,edges),5], rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)$alpha
 				)
-
-				v.modified[hybrid.index, donor.index] <- weights[2] * alpha.scaling * AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = parent.2.tipward, tipward.height = flow$time.from.root.recipient[flow.index], rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)$variance
+				#so weight the vcv by original and what we get from other path
+				v.modified[hybrid.index, donor.index] <- (weights[1] * vcv[hybrid.index, donor.index]) + (weights[2] * alpha.scaling * AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = parent.2.tipward, tipward.height = flow$time.from.root.recipient[flow.index], rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)$variance)
 				v.modified[donor.index, hybrid.index] <- v.modified[hybrid.index, donor.index]
 			}
 			descendants.of.parent <- getDescendants(phy, parent.1) 
 			descendants.of.parent <- descendants.of.parent[!(descendants.of.parent %in% recipient.indices)] #only want to look at the covariance between the nonhybrids and the hybrids
 			for (parent.descendant.index in sequence(length(descendants.of.parent))) {
 				parent.descendant <- descendants.of.parent[parent.descendant.index]
-				v.modified[parent.descendant, hybrid.index] <- weights[1] * v.modified[parent.descendant, hybrid.index]
+				#so idea here is that you decrease the covariance of the hybrid and parent 1, but this doesn't go down to zero; it is based on what it'd be if the hybrid were at the other parent
+				branch1 <- AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = parent.descendant, rootward.node=Ntip(phy)+1, tipward.height = edges[EdgesTipwardNumberToRow(parent.descendant,edges),5], rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)
+				alpha.sum.1 <- branch1$alpha
+				second.term.1 <- branch1$second.term
+				branchh <- AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = hybrid.index, rootward.node=parent.2.rootward, tipward.height = edges[EdgesTipwardNumberToRow(hybrid.index,edges),5], rootward.height=flow$time.from.root.recipient[flow.index], Rate.mat=Rate.mat, root.state=root.state)
+				alpha.sum.h.to.2 <- branchh$alpha
+				second.term.h.to.2 <- branchh$second.term				
+				branchh2 <- AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = parent.2.tipward, tipward.height = flow$time.from.root.recipient[flow.index], rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)
+				alpha.sum.h2node.to.root <- branchh2$alpha
+				second.term.h2node.to.root <- branchh2$second.term
+				node.connecting.p1.and.h2.in.pos2 <- getMRCA(phy, tip=c(donor.crown.node, parent.descendant))
+				
+				second.term.h2.plus.parent1.to.root <- AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint(phy, edges, tipward.node = node.connecting.p1.and.h2.in.pos2, tipward.height = edges[EdgesTipwardNumberToRow(node.connecting.p1.and.h2.in.pos2,edges),5] , rootward.height=0, Rate.mat=Rate.mat, root.state=root.state)$second.term
+				covariance.parent.hybrid.on.2 <- exp(-(alpha.sum.1 + alpha.sum.h.to.2 + alpha.sum.h2node.to.root)) * (second.term.h2.plus.parent1.to.root) #Beaulieu et al equation 13
+				v.modified[parent.descendant, hybrid.index] <- (weights[1] * v.modified[parent.descendant, hybrid.index]) + (weights[2] * covariance.parent.hybrid.on.2)
 				v.modified[hybrid.index, parent.descendant] <- v.modified[parent.descendant, hybrid.index]
 			}
 			
@@ -139,11 +152,12 @@ GetRoot <- function(phy) {
 
 AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint <- function(phy, edges, tipward.node, rootward.node=Ntip(phy)+1, tipward.height, rootward.height=0, Rate.mat, root.state) {
 	alpha=Rate.mat[1,]
-	sigma=Rate.mat[2,]
+	sigma.sq=Rate.mat[2,]
 	done <- FALSE
 	variance.sum <- 0
 	alpha.sum <- 0
 	weight.vector <- rep(0, length(alpha))
+	second.term.sum <- 0 #second term from Beaulieu et al. 2012 equation 13, but only for one lineage (so to get the overall second term, add one of these for each lineage i, j)
 	anc = EdgesGetOneNodeNumberRootward(tipward.node, edges)
 	tipward.row <- EdgesTipwardNumberToRow(tipward.node, edges)
 	oldtime=edges[tipward.row,4]
@@ -159,25 +173,45 @@ AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint <- function(
 		oldregime=root.state
 	}	
 	newregime=which(edges[tipward.row,6:(k+5)]==1)
+	if(oldtime<rootward.height) {
+		done<-TRUE
+	}
 	oldtime <- max(oldtime, rootward.height)
 	if(oldregime==newregime){
-		variance.sum <- variance.sum + sigma[oldregime]*((exp(2*alpha[oldregime]*tipward.height)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
+		variance.sum <- variance.sum + sigma.sq[oldregime]*((exp(2*alpha[oldregime]*tipward.height)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
+		if(tipward.height<oldtime) {
+			stop("problem with time sign")
+		}
 		alpha.sum <- alpha.sum + alpha[oldregime]*(tipward.height - oldtime)
+		second.term.sum <- second.term.sum + ((sigma.sq[oldregime])) * (exp(2*alpha[oldregime] * tipward.height) - exp(2*alpha[oldregime] * oldtime)) / (2 * alpha[oldregime])
 	} 	else{
 		a.time <- tipward.height - mean(c(newtime, oldtime))
 		halftime=newtime-((newtime-oldtime)/2)
 		if(a.time<0) { #we're starting out rootward of the half time
-			variance.sum <- variance.sum + sigma[oldregime]*((exp(2*alpha[oldregime]*tipward.height)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
+			variance.sum <- variance.sum + sigma.sq[oldregime]*((exp(2*alpha[oldregime]*tipward.height)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
 			alpha.sum <- alpha.sum + alpha[oldregime]*(tipward.height - oldtime)
 			weight.vector[oldregime] <- weight.vector[oldregime] + alpha[oldregime]*(tipward.height - oldtime)
+			second.term.sum <- second.term.sum + ((sigma.sq[oldregime])) * (exp(2*alpha[oldregime] * tipward.height) - exp(2*alpha[oldregime] * oldtime)) / (2 * alpha[oldregime])
+		if(tipward.height<oldtime) {
+			stop("problem with time sign")
+		}
+
 		} else {
-			variance.sum <- variance.sum + sigma[oldregime]*((exp(2*alpha[oldregime]*halftime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))	
+			variance.sum <- variance.sum + sigma.sq[oldregime]*((exp(2*alpha[oldregime]*halftime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))	
 			alpha.sum <- alpha.sum + alpha[oldregime]*(halftime - oldtime)
 			weight.vector[oldregime] <- weight.vector[oldregime] + alpha[oldregime]*(halftime - oldtime)
-		
-			variance.sum <- variance.sum + sigma[newregime]*((exp(2*alpha[newregime]*tipward.height)-exp(2*alpha[newregime]*tipward.height))/(2*alpha[newregime]))		
+			second.term.sum <- second.term.sum + ((sigma.sq[oldregime])) * (exp(2*alpha[oldregime] * halftime) - exp(2*alpha[oldregime] * oldtime)) / (2 * alpha[oldregime])
+		if(halftime<oldtime) {
+			stop("problem with time sign")
+		}
+
+			variance.sum <- variance.sum + sigma.sq[newregime]*((exp(2*alpha[newregime]*tipward.height)-exp(2*alpha[newregime]*tipward.height))/(2*alpha[newregime]))		
 			alpha.sum <- alpha.sum + alpha[newregime]*(tipward.height - halftime)
 			weight.vector[newregime] <- weight.vector[newregime] + alpha[newregime]*(tipward.height - halftime)
+			second.term.sum <- second.term.sum + ((sigma.sq[newregime])) * (exp(2*alpha[newregime] * tipward.height) - exp(2*alpha[newregime] * halftime)) / (2 * alpha[newregime])
+		if(halftime>tipward.height) {
+			stop("problem with time sign")
+		}
 
 		}
 	}
@@ -208,32 +242,48 @@ AddVarianceAndAlphaAndWeightsFromPartwayAlongEdgeDownToAnotherPoint <- function(
 
 		
 		if(oldregime==newregime){
-			variance.sum <- variance.sum + sigma[oldregime]*((exp(2*alpha[oldregime]*newtime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
+			variance.sum <- variance.sum + sigma.sq[oldregime]*((exp(2*alpha[oldregime]*newtime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))
 			alpha.sum <- alpha.sum + alpha[oldregime]*(newtime - oldtime)
 			weight.vector[oldregime] <- weight.vector[oldregime] + alpha[oldregime]*(newtime - oldtime)
+			second.term.sum <- second.term.sum + ((sigma.sq[oldregime])) * (exp(2*alpha[oldregime] * newtime) - exp(2*alpha[oldregime] * oldtime)) / (2 * alpha[oldregime])
+		if(newtime<oldtime) {
+			stop("problem with time sign 253")
+		}
 
 
 		} 	else{
 			b.time <- oldtime - mean(c(newtime, oldtime))
 			halftime=newtime-((newtime-oldtime)/2)
 			if(oldtime > mean(c(newtime, edges[current.row,4]))) { #we're starting out tipward of the half time
-				variance.sum <- variance.sum + sigma[newregime]*((exp(2*alpha[newregime]*tipward.height)-exp(2*alpha[newregime]*oldtime))/(2*alpha[newregime]))
+				variance.sum <- variance.sum + sigma.sq[newregime]*((exp(2*alpha[newregime]*tipward.height)-exp(2*alpha[newregime]*oldtime))/(2*alpha[newregime]))
 				alpha.sum <- alpha.sum + alpha[newregime] * (newtime - oldtime)
 				weight.vector[newregime] <- weight.vector[newregime] + alpha[newregime] * (newtime - oldtime)
-	
+				second.term.sum <- second.term.sum + ((sigma.sq[newregime])) * (exp(2*alpha[newregime] * newtime) - exp(2*alpha[newregime] * oldtime)) / (2 * alpha[newregime])
+			if(newtime<oldtime) {
+			stop("problem with time sign 267")
+		}
+
 			} else {
-				variance.sum <- variance.sum + sigma[oldregime]*((exp(2*alpha[oldregime]*halftime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))		
+				variance.sum <- variance.sum + sigma.sq[oldregime]*((exp(2*alpha[oldregime]*halftime)-exp(2*alpha[oldregime]*oldtime))/(2*alpha[oldregime]))		
 				alpha.sum <- alpha.sum + alpha[oldregime]*(halftime - oldtime)	
 				weight.vector[oldregime] <- weight.vector[oldregime] + alpha[oldregime]*(halftime - oldtime)
+				second.term.sum <- second.term.sum + ((sigma.sq[oldregime])) * (exp(2*alpha[oldregime] * halftime) - exp(2*alpha[oldregime] * oldtime)) / (2 * alpha[oldregime])
+		if(halftime<oldtime) {
+			stop("problem with time sign")
+		}
 
-				variance.sum <- variance.sum + sigma[newregime]*((exp(2*alpha[newregime]*tipward.height)-exp(2*alpha[newregime]*tipward.height))/(2*alpha[newregime]))	
+				variance.sum <- variance.sum + sigma.sq[newregime]*((exp(2*alpha[newregime]*tipward.height)-exp(2*alpha[newregime]*tipward.height))/(2*alpha[newregime]))	
 				alpha.sum <- alpha.sum + alpha[newregime]*(newtime - halftime)		
 				weight.vector[newregime] <- weight.vector[newregime] + alpha[newregime]*(newtime - halftime)	
+				second.term.sum <- second.term.sum + ((sigma.sq[newregime])) * (exp(2*alpha[newregime] * newtime) - exp(2*alpha[newregime] * halftime)) / (2 * alpha[newregime])
+		if(newtime<halftime) {
+			stop("problem with time sign")
+		}
 			}
 		}
 		
 	}
-	return(list(variance=variance.sum, alpha=alpha.sum, weights=weight.vector))
+	return(list(variance=variance.sum, alpha=alpha.sum, weights=weight.vector, second.term = second.term.sum ))
 }
 
 
