@@ -18,13 +18,13 @@
 #multiple alphas (OUSMA): alpha=c(0.5,0.1); sigma.sq=c(0.9,0.9); theta0=0; theta=c(1,2)
 #multiple alphas and sigmas (OUSMVA): alpha=c(0.5,0.1); sigma.sq=c(0.45,0.9); theta0=0; theta=c(1,2)
 
-OUwie.sim.network <- function(phy, data=NULL, simmap.tree=FALSE, scaleHeight=FALSE, alpha, sigma.sq, theta0, theta, flow, scaling.by.sd=FALSE){
+OUwie.sim.network <- function(phy, data.in=NULL, simmap.tree=FALSE, scaleHeight=FALSE, alpha, sigma.sq, theta0, theta, flow, scaling.by.sd=FALSE){
 
 	if(simmap.tree==FALSE){
-		data.original <- data
+		data.original <- data.in
 		#This is annoying, but the second column has to be in there twice otherwise, error.
-		data.shrunk<-data.frame(data[,2], data[,2], row.names=data[,1])
-		data.shrunk<-data[phy$tip.label,]
+		data.shrunk<-data.frame(data.in[,2], data.in[,2], row.names=data.in[,1])
+		data.shrunk<-data.shrunk[phy$tip.label,]
 				
 		
 
