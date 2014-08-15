@@ -35,7 +35,8 @@ OUwie.sim.network <- function(phy, data.in=NULL, simmap.tree=FALSE, scaleHeight=
 		parent.1.regimes <- c()
 		parent.2.regimes <- c()
 		hybrid.regimes <- c()
-		
+		print(phy.shrunk)
+
 		for(flow.index in sequence(dim(flow)[1])) {
 
 
@@ -101,10 +102,18 @@ OUwie.sim.network <- function(phy, data.in=NULL, simmap.tree=FALSE, scaleHeight=
 			recipient.crown.node <- getMRCA(phy.shrunk, tip=recipient.taxa)
 			if(is.null(recipient.crown.node)) { #must be a single recipient taxon
 				recipient.crown.node <- which(phy.shrunk$tip.label == recipient.taxa[1])
-			}	
+				recipient.subtrees<-append(recipient.subtrees, recipient.taxa[1])
+			}	else {
+				recipient.subtrees <- append(recipient.subtrees, extract.clade(phy.shrunk, recipient.crown.node))
+			}
 			data.shrunk <- data.shrunk[!(data.shrunk[,1] %in% recipient.taxa),]
-			recipient.subtrees <- append(recipient.subtrees, extract.clade(phy.shrunk, recipient.crown.node))
-			phy.shrunk <- drop.tip(phy.shrunk, recipient.taxa, subtree=TRUE)
+			if(length(recipient.taxa)==1) {
+				phy.shrunk$tip.label[which(phy.shrunk$tip.label==recipient.taxa[1])] <- '[1_tip]'
+			} else {
+				phy.shrunk <- drop.tip(phy.shrunk, recipient.taxa, subtree=TRUE)
+			}
+			print("postdrop")
+			print(phy.shrunk)
 			shrunk.tip.id <- which(grepl("_tip", phy.shrunk$tip.label))
 			hybrid.regime <- which(edges[EdgesTipwardNumberToRow(recipient.crown.node, edges),6:(k+5)]==1)
 			hybrid.regimes <- append(hybrid.regimes, hybrid.regime)
@@ -115,7 +124,7 @@ OUwie.sim.network <- function(phy, data.in=NULL, simmap.tree=FALSE, scaleHeight=
 			recipient.stem.lengths <- append(recipient.stem.lengths, new.tipward.length)
 			phy.shrunk$edge.length[which(phy.shrunk$edge[,2]==shrunk.tip.id)] <- original.length - ( nodeheight(phy.shrunk, shrunk.tip.id) - flow$time.from.root.recipient[flow.index] )
 			phy.shrunk$tip.label[shrunk.tip.id] <- paste("Hybrid_flow_index_recipient_", flow.index, sep="") #so this is a node where the hybrid lineage attaches to parent 1
-			
+			print(phy.shrunk)
 			donor.crown.node <- getMRCA(phy.shrunk, tip=donor.taxa)
 			if(is.null(donor.crown.node)) { #must be a single donor taxon
 				donor.crown.node <- which(phy.shrunk$tip.label == donor.taxa[1])
@@ -123,12 +132,18 @@ OUwie.sim.network <- function(phy, data.in=NULL, simmap.tree=FALSE, scaleHeight=
 			parent.2.tipward = donor.crown.node
 			parent.2.rootward = EdgesGetOneNodeNumberRootward(donor.crown.node, edges)
 			parent.2.tipward.regime <- which(edges[EdgesTipwardNumberToRow(donor.crown.node, edges),6:(k+5)]==1)
-			parent.2.rootward.regime <- which(edges[EdgesRootwardNumberToRow(donor.crown.node, edges),6:(k+5)]==1)
+			parent.2.rootward.regime <- which(edges[EdgesTipwardNumberToRow(parent.2.rootward, edges),6:(k+5)]==1)
 			parent.1.regimes <- append(parent.1.regimes, parent.1.regime)
-			parent.2.regimes <- append(parent.2.regimes, parent.2.regime)
-			phy.shrunk<-bind.tip(phy.shrunk, tip.label= paste("Hybrid_flow_index_donor_", flow.index, sep=""), where=donor.crown.node, position=nodeheight(phy.shrunk, donor.crown.node) -  flow$time.from.root.donor[flow.index])#this is a node where the hybrid lineage attaches to parent 2
-			data.shrunk <- rbind(data.shrunk, data.frame(paste("Hybrid_flow_index_recipient_", flow.index, sep=""), parent.1.regime , parent.1.regime ))
-			data.shrunk <- rbind(data.shrunk, data.frame(paste("Hybrid_flow_index_donor_", flow.index, sep=""), parent.2.rootward.regime , parent.2.rootward.regime ))						
+			parent.2.regimes <- append(parent.2.regimes, parent.2.rootward.regime)
+			phy.shrunk<-bind.tip(phy.shrunk, tip.label= paste("Hybrid_flow_index_donor_", flow.index, sep=""), where=donor.crown.node, edge.length=0, position=nodeheight(phy.shrunk, donor.crown.node) -  flow$time.from.root.donor[flow.index])#this is a node where the hybrid lineage attaches to parent 2
+			new.data <- data.frame(parent.1.regime , parent.1.regime , stringsAsFactors=FALSE)
+			colnames(new.data) <- colnames(data.shrunk)
+			rownames(new.data) <- paste("Hybrid_flow_index_recipient_", flow.index, sep="")
+			data.shrunk <- rbind(data.shrunk, new.data) #row.names=paste("Hybrid_flow_index_recipient_", flow.index, sep=""), # col.names=colnames(data.shrunk)
+			new.data <- data.frame(parent.2.rootward.regime , parent.2.rootward.regime , stringsAsFactors=FALSE)
+			colnames(new.data) <- colnames(data.shrunk)
+			rownames(new.data) <- paste("Hybrid_flow_index_donor_", flow.index, sep="")
+			data.shrunk <- rbind(data.shrunk, new.data) #row.names=paste("Hybrid_flow_index_recipient_", flow.index, sep=""), # col.names=colnames(data.shrunk)
 		}
 		
 		#whew. Now we've pruned off the hybrid taxa and added the placeholders on phy.shrunk. Now simulate on that as normal
@@ -234,8 +249,10 @@ OUwie.sim.network <- function(phy, data.in=NULL, simmap.tree=FALSE, scaleHeight=
 			theta0 <- weights[1] * parent.1.value + weights[2] * parent.2.value
 			theta0.post.root.edge <- theta0*exp(-alpha[hybrid.regime]*(recipient.stem.lengths[flow.index]))+(theta[hybrid.regime])*(1-exp(-alpha[hybrid.regime]*(recipient.stem.lengths[flow.index])))+sigma[hybrid.regime]*rnorm(1,0,1)*sqrt((1-exp(-2*alpha[hybrid.regime]*(recipient.stem.lengths[flow.index])))/(2*alpha[hybrid.regime]))
 			recipient.taxa <- strsplit(flow$recipient[flow.index], ",")[[1]]
-			
-			hybrid.sim <- OUwie.sim(recipient.subtrees[[flow.index]], data=data.original[which(data.original[,1] %in% recipient.taxa),], simmap.tree=simmap.tree, scaleHeight=scaleHeight, alpha, sigma.sq, theta0, theta)
+			hybrid.sim <- theta0.post.root.edge
+			if(length(recipient.taxa)>1) {
+				hybrid.sim <- OUwie.sim(recipient.subtrees[[flow.index]], data=data.original[which(data.original[,1] %in% recipient.taxa),], simmap.tree=simmap.tree, scaleHeight=scaleHeight, alpha, sigma.sq, theta0, theta)
+			}
 			sim.dat <- rbind(sim.dat, hybrid.sim)
 		}
 		
